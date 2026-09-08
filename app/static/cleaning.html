@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Cleaning Dashboard</title>
+    <link rel="stylesheet" href="/css/output.css">
+    <script src="/static/js/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex">
+    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 justify-between shrink-0 sticky top-0 h-screen">
+        <div>
+            <h2 class="text-base font-bold text-blue-400 mb-6 px-2 tracking-wide">Data AI Engine</h2>
+            <nav class="space-y-1.5">
+                <a href="#" id="sidebar-ingestion-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
+                    📂 Ingestion & Schema
+                </a>
+                <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 text-white font-medium text-sm transition">
+                    🧹 Data Cleaning Grid
+                </a>
+                <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
+                    📊 Visualization Studio
+                </a>
+            </nav>
+        </div>
+        <div class="text-xs text-gray-500 px-2 font-mono">Engine v1.0</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col items-center justify-start p-8 overflow-y-auto gap-6">
+        <div class="w-full max-w-6xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                <div>
+                    <h1 class="text-xl font-bold text-purple-400">Interactive Data Cleaning Dashboard</h1>
+                    <p class="text-xs text-gray-400 mt-1">File: <span id="current-filename" class="text-white font-mono"></span></p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="apply-actions-btn" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">Execute AI Cleaning Plan</button>
+                </div>
+            </div>
+
+            <div id="ai-actions-panel" class="bg-gray-950 border border-gray-800 rounded-xl p-5 mb-6">
+                <h3 class="text-sm font-bold text-purple-400 mb-2 uppercase tracking-wide">AI Data Cleaning Impact Summary</h3>
+                <p id="ai-summary-text" class="text-xs text-gray-300 leading-relaxed italic">Generating predictive impact analysis using local AI engine...</p>
+            </div>
+
+            <div class="overflow-x-auto max-h-[500px] rounded-xl border border-gray-800 bg-gray-950">
+                <table class="w-full text-left text-sm text-gray-300 border-collapse">
+                    <thead id="grid-header" class="bg-gray-900 text-gray-400 uppercase text-xs sticky top-0 border-b border-gray-800"></thead>
+                    <tbody id="grid-body" class="divide-y divide-gray-800/60"></tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
+                <div class="flex items-center gap-3">
+                    <input type="text" id="cleaned-filename-input" value="cleaned_output.csv" class="bg-gray-950 border border-gray-800 rounded px-3 py-2 text-xs text-gray-200 w-64">
+                    <button id="save-cleaned-btn" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition">Save & Download Cleaned Data</button>
+                </div>
+                <button id="proceed-visualize-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg text-xs font-semibold transition">Proceed to Visualization →</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const filename = urlParams.get('file');
+        
+        if (!filename) {
+            alert('No file specified!');
+            window.location.href = '/';
+        }
+
+        document.getElementById('current-filename').textContent = filename;
+        document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(filename)}`;
+        document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(filename)}`;
+        document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent("cleaned_" + filename)}`;
+        
+        let cachedActions = {};
+
+        async function loadCleaningPage() {
+            try {
+                const res = await fetch(`/api/v1/cleaning/grid/${filename}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to load grid');
+
+                cachedActions = data.ai_actions || {};
+                document.getElementById('ai-summary-text').textContent = data.cleaning_summary || "No summary generated.";
+
+                const headerRow = document.getElementById('grid-header');
+                const bodyRows = document.getElementById('grid-body');
+
+                headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-3 border-r border-gray-800">${col}</th>`).join('') + '</tr>';
+                
+                bodyRows.innerHTML = '';
+                data.data.forEach((row, rowIndex) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = data.columns.map(col => `
+                        <td class="p-2 border-r border-gray-800/50">
+                            <input type="text" value="${row[col] !== undefined ? row[col] : ''}" 
+                                   class="bg-transparent w-full focus:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-500 px-1 rounded text-gray-200"
+                                   data-row="${rowIndex}" data-col="${col}">
+                        </td>
+                    `).join('');
+                    bodyRows.appendChild(tr);
+                });
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        document.getElementById('apply-actions-btn').addEventListener('click', async () => {
+            try {
+                const res = await fetch(`/api/v1/cleaning/apply-actions/${filename}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actions: cachedActions })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to apply actions');
+                
+                const cleanedTargetName = "cleaned_" + filename;
+                localStorage.setItem('active_cleaned_file_' + filename, cleanedTargetName);
+                document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(cleanedTargetName)}`;
+                
+                alert('AI cleaning plan successfully applied to memory cache.');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+
+        document.getElementById('save-cleaned-btn').addEventListener('click', async () => {
+            const save_filename = document.getElementById('cleaned-filename-input').value.trim() || 'cleaned_output.csv';
+            try {
+                const res = await fetch(`/api/v1/cleaning/save-cleaned/${filename}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actions: cachedActions, save_filename })
+                });
+                if (!res.ok) throw new Error('Failed to save cleaned data');
+                
+                const blob = await res.blob();
+
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: save_filename,
+                            types: [{
+                                description: 'Data Files',
+                                accept: { 
+                                    'text/csv': ['.csv'], 
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 
+                                    'application/octet-stream': ['.parquet'] 
+                                }
+                            }]
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error(err);
+                        }
+                        return;
+                    }
+                } else {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = save_filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }
+
+                localStorage.setItem('active_cleaned_file_' + filename, save_filename);
+                document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+
+        document.getElementById('proceed-visualize-btn').addEventListener('click', () => {
+            localStorage.setItem('cleaning_done_' + filename, 'true');
+            const activeCleaned = localStorage.getItem('active_cleaned_file_' + filename) || ("cleaned_" + filename);
+            window.location.href = `/visualize.html?file=${encodeURIComponent(activeCleaned)}`;
+        });
+
+        loadCleaningPage();
+    </script>
+</body>
+</html>
