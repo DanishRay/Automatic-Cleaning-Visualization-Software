@@ -13,32 +13,31 @@
             <h2 class="text-base font-bold text-blue-400 mb-6 px-2 tracking-wide">Data AI Engine</h2>
             <nav class="space-y-1.5">
                 <a href="#" id="sidebar-ingestion-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
-                    📂 Ingestion & Schema
+                    Ingestion & Schema
                 </a>
                 <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
-                    🧹 Data Cleaning Grid
+                    Data Cleaning Grid
                 </a>
                 <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 text-white font-medium text-sm transition">
-                    📊 Visualization Studio
+                    Visualization Studio
                 </a>
             </nav>
         </div>
-        <div class="text-xs text-gray-500 px-2 font-mono">Engine v1.0</div>
     </aside>
 
     <main class="flex-1 flex flex-col p-8 overflow-y-auto gap-6">
         <div class="w-full max-w-7xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8">
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div>
-                    <h1 class="text-xl font-bold text-blue-400">AI-Powered Visualization Studio & Workspace</h1>
-                    <p class="text-xs text-gray-400 mt-1">Multi-page tabs, customization controls, and narrative analytics. File: <span id="current-filename" class="text-white font-mono"></span></p>
+                    <h1 class="text-xl font-bold text-blue-400">Visualization Dashboard</h1>
+                    <p class="text-xs text-gray-400 mt-1">Multi-page tabs and narrative analytics. File: <span id="current-filename" class="text-white font-mono"></span></p>
                 </div>
                 <button id="load-recommendations-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">Generate AI Visualizations</button>
             </div>
 
             <div class="flex gap-2 border-b border-gray-800 pb-4 mb-6">
                 <button onclick="switchTab('ai-insights')" id="tab-btn-ai-insights" class="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white transition">🤖 AI Narrative Dashboards</button>
-                <button onclick="switchTab('custom-builder')" id="tab-btn-custom-builder" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-400 hover:text-white transition">⚙️ Custom Chart Builder</button>
+                <button onclick="switchTab('custom-builder')" id="tab-btn-custom-builder" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 text-gray-400 hover:text-white transition">⚙️ Custom Chart</button>
             </div>
 
             <div id="tab-ai-insights" class="space-y-8">
@@ -86,8 +85,7 @@
 
                     <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-xl p-6 flex flex-col justify-between">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 id="custom-preview-title" class="font-bold text-sm text-gray-200">Custom Workspace Canvas</h3>
-                            <span class="text-xs font-mono uppercase bg-gray-900 px-2.5 py-1 rounded text-purple-400 border border-gray-800">Interactive View</span>
+                            <span class="text-xs font-mono uppercase bg-gray-900 px-2.5 py-1 rounded text-purple-400 border border-gray-800">Visualization Result</span>
                         </div>
                         <div class="relative h-80 w-full bg-gray-900/50 rounded-xl p-2 border border-gray-800/60 flex items-center justify-center">
                             <canvas id="custom-canvas"></canvas>
@@ -247,7 +245,7 @@
                             <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
                                 <div>
                                     <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                        <span>🤖</span> AI Trend & Anomaly Insights
+                                        <span>🤖</span> AI Insights
                                     </h4>
                                     <ul class="space-y-2 text-xs text-gray-300 leading-relaxed">
                                         <li class="flex items-start gap-2"><span class="text-purple-400 font-bold">•</span><span>${rationaleText}</span></li>
