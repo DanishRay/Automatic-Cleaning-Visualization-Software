@@ -32,8 +32,11 @@
                     <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
                         02. Data Cleaning Grid
                     </a>
+                    <a href="#" id="sidebar-transform-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                        03. Data Transformation
+                    </a>
                     <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#00f0ff]/60 bg-[#00f0ff]/20 text-[#00f0ff] font-medium text-sm transition">
-                        03. Visualization Studio
+                        04. Visualization Studio
                     </a>
                 </nav>
             </div>
@@ -119,7 +122,7 @@
     </div>
 
     <footer class="mt-4 text-center text-[10px] text-[#008b8b] tracking-widest">
-        DATA.AI.ENGINE HOLOGRAPHIC INTERFACE // AUTHORIZED ACCESS ONLY
+        // DATA.AI.ENGINE //
     </footer>
 
     <script>
@@ -131,19 +134,21 @@
         const urlParams = new URLSearchParams(window.location.search);
         let rawFilename = urlParams.get('file') || "HR Data.xlsx";
         
-        const baseName = rawFilename.replace("cleaned_", "");
+        const baseName = rawFilename.replace("cleaned_", "").replace("transformed_", "");
+        const storedTransformedFile = localStorage.getItem('active_transformed_file_' + baseName);
         const storedCleanedFile = localStorage.getItem('active_cleaned_file_' + baseName);
         
         let filename = urlParams.get('file');
         if (!filename) {
-            filename = storedCleanedFile || ("cleaned_" + baseName);
-        } else if (!filename.startsWith("cleaned_") && storedCleanedFile) {
-            filename = storedCleanedFile;
+            filename = storedTransformedFile || storedCleanedFile || ("transformed_" + baseName);
+        } else if (!filename.startsWith("transformed_") && !filename.startsWith("cleaned_")) {
+            filename = storedTransformedFile || ("transformed_" + filename);
         }
 
         document.getElementById('current-filename').textContent = filename;
         document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
         document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(baseName)}`;
+        document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(storedCleanedFile || "cleaned_" + baseName)}`;
         document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(filename)}`;
 
         let activeChartInstance = null;
@@ -211,7 +216,7 @@
                 if (!res.ok) throw new Error(chartData.detail || 'Failed to fetch custom chart metrics');
 
                 document.getElementById('custom-preview-title').textContent = `${yAxis} by ${xAxis} (${chartType.toUpperCase()})`;
-                document.getElementById('custom-ai-note').innerHTML = `🤖 <strong>Custom Analysis:</strong> Successfully aggregated real dataset values across ${xAxis} and ${yAxis} using palette '${palette}'.`;
+                document.getElementById('custom-ai-note').innerHTML = `🤖 <strong>Custom Analysis:</strong> Successfully aggregated transformed dataset values across ${xAxis} and ${yAxis} using palette '${palette}'.`;
 
                 const ctx = document.getElementById('custom-canvas').getContext('2d');
                 if (activeChartInstance) {
@@ -241,7 +246,7 @@
 
         document.getElementById('load-recommendations-btn').addEventListener('click', async () => {
             const container = document.getElementById('charts-container');
-            container.innerHTML = '<p class="text-[#ffb000] text-center py-12 animate-pulse">[ ANALYZING COLUMN DISTRIBUTIONS & GENERATING AI NARRATIVES... ]</p>';
+            container.innerHTML = '<p class="text-[#ffb000] text-center py-12 animate-pulse">[ ANALYZING TRANSFORMED DATA DISTRIBUTIONS & GENERATING AI NARRATIVES... ]</p>';
 
             try {
                 const res = await fetch(`/api/v1/visualize/recommend/${encodeURIComponent(filename)}`);

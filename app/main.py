@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 import shutil
 import sys
-from app.routers import data_router, ai_router, cleaning_router, visualization_router
+from app.routers import data_router, ai_router, cleaning_router, visualization_router, transformation_router
 
 app = FastAPI(title="Local-First Data AI Engine", version="1.0.0")
 
@@ -54,6 +54,7 @@ app.include_router(data_router.router)
 app.include_router(ai_router.router)
 app.include_router(cleaning_router.router)
 app.include_router(visualization_router.router)
+app.include_router(transformation_router.router)
 
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS

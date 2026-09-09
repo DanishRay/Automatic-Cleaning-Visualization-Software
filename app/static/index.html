@@ -32,8 +32,11 @@
                     <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-500 bg-[#050b14]/50 pointer-events-none font-medium text-sm transition">
                         02. Data Cleaning Grid
                     </a>
+                    <a href="#" id="sidebar-transform-link" class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-500 bg-[#050b14]/50 pointer-events-none font-medium text-sm transition">
+                        03. Data Transformation
+                    </a>
                     <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-500 bg-[#050b14]/50 pointer-events-none font-medium text-sm transition">
-                        03. Visualization Studio
+                        04. Visualization Studio
                     </a>
                 </nav>
             </div>
@@ -95,7 +98,7 @@
     </div>
 
     <footer class="mt-4 text-center text-[10px] text-[#008b8b] tracking-widest">
-        DATA.AI.ENGINE HOLOGRAPHIC INTERFACE // AUTHORIZED ACCESS ONLY
+        // DATA.AI.ENGINE //
     </footer>
 
     <div id="cleanup-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50">
@@ -125,6 +128,7 @@
         const metricCols = document.getElementById('metric-cols');
         const loadGridBtn = document.getElementById('load-grid-btn');
         const sidebarCleaningLink = document.getElementById('sidebar-cleaning-link');
+        const sidebarTransformLink = document.getElementById('sidebar-transform-link');
         const sidebarVisualizeLink = document.getElementById('sidebar-visualize-link');
         
         const cleanupModal = document.getElementById('cleanup-modal');
@@ -199,8 +203,12 @@
                     sidebarCleaningLink.href = `/cleaning.html?file=${encodeURIComponent(uploadedFilename)}`;
                     sidebarCleaningLink.className = "flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition";
                 }
+                if (sidebarTransformLink) {
+                    sidebarTransformLink.href = `/transform.html?file=${encodeURIComponent("cleaned_" + uploadedFilename)}`;
+                    sidebarTransformLink.className = "flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition";
+                }
                 if (sidebarVisualizeLink) {
-                    sidebarVisualizeLink.href = `/visualize.html?file=${encodeURIComponent(uploadedFilename)}`;
+                    sidebarVisualizeLink.href = `/visualize.html?file=${encodeURIComponent("transformed_" + uploadedFilename)}`;
                     sidebarVisualizeLink.className = "flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition";
                 }
 

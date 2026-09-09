@@ -8,6 +8,7 @@
       "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --color-red-200: oklch(88.5% 0.062 18.334);
     --color-red-400: oklch(70.4% 0.191 22.216);
     --color-gray-500: oklch(55.1% 0.027 264.364);
     --color-black: #000;
@@ -287,11 +288,17 @@
   .h-80 {
     height: calc(var(--spacing) * 80);
   }
+  .max-h-\[300px\] {
+    max-height: 300px;
+  }
   .max-h-\[500px\] {
     max-height: 500px;
   }
   .min-h-screen {
     min-height: 100vh;
+  }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
   }
   .w-64 {
     width: calc(var(--spacing) * 64);
@@ -369,6 +376,11 @@
     --tw-space-y-reverse: 0;
     margin-block-start: calc(calc(var(--spacing) * 2) * var(--tw-space-y-reverse));
     margin-block-end: calc(calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
+  }
+  :where(.space-y-3 > :not(:last-child)) {
+    --tw-space-y-reverse: 0;
+    margin-block-start: calc(calc(var(--spacing) * 3) * var(--tw-space-y-reverse));
+    margin-block-end: calc(calc(var(--spacing) * 3) * calc(1 - var(--tw-space-y-reverse)));
   }
   :where(.space-y-4 > :not(:last-child)) {
     --tw-space-y-reverse: 0;
@@ -457,6 +469,9 @@
   .border-\[\#008b8b\]\/30 {
     border-color: color-mix(in oklab, #008b8b 30%, transparent);
   }
+  .border-\[\#008b8b\]\/40 {
+    border-color: color-mix(in oklab, #008b8b 40%, transparent);
+  }
   .border-\[\#008b8b\]\/50 {
     border-color: color-mix(in oklab, #008b8b 50%, transparent);
   }
@@ -514,6 +529,9 @@
   .bg-transparent {
     background-color: transparent;
   }
+  .p-1\.5 {
+    padding: calc(var(--spacing) * 1.5);
+  }
   .p-2 {
     padding: calc(var(--spacing) * 2);
   }
@@ -553,6 +571,9 @@
   .py-1 {
     padding-block: var(--spacing);
   }
+  .py-1\.5 {
+    padding-block: calc(var(--spacing) * 1.5);
+  }
   .py-2 {
     padding-block: calc(var(--spacing) * 2);
   }
@@ -570,6 +591,9 @@
   }
   .pt-4 {
     padding-top: calc(var(--spacing) * 4);
+  }
+  .pr-1 {
+    padding-right: var(--spacing);
   }
   .pb-3 {
     padding-bottom: calc(var(--spacing) * 3);
@@ -705,6 +729,9 @@
     .hover\:text-\[\#00f0ff\]:hover {
       color: #00f0ff;
     }
+    .hover\:text-red-200:hover {
+      color: var(--color-red-200);
+    }
   }
   .focus\:border-\[\#00f0ff\]:focus {
     border-color: #00f0ff;
@@ -726,6 +753,9 @@
   @media (width >= 48rem) {
     .md\:w-64 {
       width: calc(var(--spacing) * 64);
+    }
+    .md\:w-80 {
+      width: calc(var(--spacing) * 80);
     }
     .md\:flex-row {
       flex-direction: row;

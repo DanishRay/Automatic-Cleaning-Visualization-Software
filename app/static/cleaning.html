@@ -32,8 +32,11 @@
                     <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#00f0ff]/60 bg-[#00f0ff]/20 text-[#00f0ff] font-medium text-sm transition">
                         02. Data Cleaning Grid
                     </a>
+                    <a href="#" id="sidebar-transform-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                        03. Data Transformation
+                    </a>
                     <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
-                        03. Visualization Studio
+                        04. Visualization Studio
                     </a>
                 </nav>
             </div>
@@ -71,14 +74,14 @@
                         <input type="text" id="cleaned-filename-input" value="cleaned_output.csv" class="bg-[#050b14] border border-[#008b8b] rounded px-3 py-2 text-xs text-[#00f0ff] w-64 focus:border-[#00f0ff] focus:outline-none">
                         <button id="save-cleaned-btn" class="bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] text-xs font-semibold px-4 py-2.5 rounded transition tracking-wider">SAVE & DOWNLOAD</button>
                     </div>
-                    <button id="proceed-visualize-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] px-4 py-2.5 rounded text-xs font-semibold transition tracking-wider">PROCEED TO VISUALIZATION →</button>
+                    <button id="proceed-transform-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] px-4 py-2.5 rounded text-xs font-semibold transition tracking-wider">PROCEED TO TRANSFORMATION →</button>
                 </div>
             </div>
         </main>
     </div>
 
     <footer class="mt-4 text-center text-[10px] text-[#008b8b] tracking-widest">
-        DATA.AI.ENGINE HOLOGRAPHIC INTERFACE // AUTHORIZED ACCESS ONLY
+        // DATA.AI.ENGINE //
     </footer>
 
     <script>
@@ -98,6 +101,7 @@
         document.getElementById('current-filename').textContent = filename;
         document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(filename)}`;
         document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(filename)}`;
+        document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent("cleaned_" + filename)}`;
         document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent("cleaned_" + filename)}`;
         
         let cachedActions = {};
@@ -145,6 +149,7 @@
                 
                 const cleanedTargetName = "cleaned_" + filename;
                 localStorage.setItem('active_cleaned_file_' + filename, cleanedTargetName);
+                document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(cleanedTargetName)}`;
                 document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(cleanedTargetName)}`;
                 
                 alert('AI cleaning plan successfully applied to memory cache.');
@@ -198,16 +203,17 @@
                 }
 
                 localStorage.setItem('active_cleaned_file_' + filename, save_filename);
+                document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(save_filename)}`;
                 document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
             } catch (err) {
                 alert('Error: ' + err.message);
             }
         });
 
-        document.getElementById('proceed-visualize-btn').addEventListener('click', () => {
+        document.getElementById('proceed-transform-btn').addEventListener('click', () => {
             localStorage.setItem('cleaning_done_' + filename, 'true');
             const activeCleaned = localStorage.getItem('active_cleaned_file_' + filename) || ("cleaned_" + filename);
-            window.location.href = `/visualize.html?file=${encodeURIComponent(activeCleaned)}`;
+            window.location.href = `/transform.html?file=${encodeURIComponent(activeCleaned)}`;
         });
 
         loadCleaningPage();

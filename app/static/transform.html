@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA.AI.ENGINE // TRANSFORMATION STUDIO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/output.css">
+</head>
+<body class="scanline h-screen w-screen overflow-hidden flex text-[#00f0ff] bg-[#050b14]">
+    <aside class="w-64 flex-shrink-0 hud-panel p-4 flex flex-col justify-between hud-border-teal h-full">
+        <div>
+            <h2 class="text-base font-bold text-[#00f0ff] mb-6 px-2 tracking-widest uppercase">DATA_AI_ENGINE</h2>
+            <nav class="space-y-2">
+                <a href="#" id="sidebar-ingestion-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                    01. Ingestion & Schema
+                </a>
+                <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                    02. Data Cleaning Grid
+                </a>
+                <a href="#" id="sidebar-transform-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#00f0ff]/60 bg-[#00f0ff]/20 text-[#00f0ff] font-medium text-sm transition">
+                    03. Data Transformation
+                </a>
+                <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                    04. Visualization Studio
+                </a>
+            </nav>
+        </div>
+        <div class="mt-6 text-[10px] text-[#008b8b] font-mono">
+            SEC_LEVEL: ALPHA<br>NODE: LOCAL_HOST
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden p-4 gap-4">
+        <header class="hud-panel p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+            <div class="space-y-1">
+                <h1 class="text-xl font-bold tracking-widest text-[#00f0ff] uppercase">[SYS_CORE // TRANSFORMATION_STUDIO]</h1>
+                <p class="text-xs text-[#008b8b] tracking-wide">OPERATION STACK ACTIVE <span class="text-[#ffb000]">//</span> STATUS: ONLINE</p>
+            </div>
+            <div class="flex flex-wrap items-center space-x-4 text-xs text-[#ffb000]">
+                <div class="bg-[#050b14] border border-[#008b8b]/40 px-2.5 py-1 rounded">CPU_LOAD: <span id="cpu-telemetry" class="text-[#00f0ff]">31.4%</span></div>
+                <div class="bg-[#050b14] border border-[#008b8b]/40 px-2.5 py-1 rounded">MEM_ALLOC: <span id="mem-telemetry" class="text-[#00f0ff]">12.8 GB</span></div>
+                <div class="bg-[#050b14] border border-[#008b8b]/40 px-2.5 py-1 rounded">SYS_TIME: <span id="time-telemetry" class="text-[#00f0ff]">00:00:00</span></div>
+            </div>
+        </header>
+
+        <div class="flex flex-row gap-4 flex-1 overflow-hidden">
+            <aside class="w-80 hud-panel p-4 flex flex-col justify-between shrink-0 hud-border-teal overflow-y-auto">
+                <div class="space-y-4">
+                    <div class="flex border border-[#008b8b] rounded overflow-hidden text-xs font-semibold">
+                        <button id="mode-pipeline" class="flex-1 py-1.5 bg-[#008b8b]/40 text-[#00f0ff] transition">OPERATION</button>
+                        <button id="mode-rscript" class="flex-1 py-1.5 bg-[#050b14] text-[#008b8b] transition">R SCRIPT</button>
+                    </div>
+
+                    <div id="view-pipeline" class="space-y-4">
+                        <h2 class="text-base font-bold text-[#ffb000] tracking-widest uppercase">OPERATION STACK</h2>
+                        <div id="operations-list" class="space-y-2 max-h-[240px] overflow-y-auto text-xs font-mono pr-1">
+                            <p class="text-[#008b8b] italic">No transformation operations queued.</p>
+                        </div>
+                        
+                        <div class="border-t border-[#008b8b]/40 pt-4 space-y-3">
+                            <h3 class="text-xs font-bold text-[#00f0ff] uppercase">Add Operation</h3>
+                            <select id="op-type" class="w-full bg-[#050b14] border border-[#008b8b] text-xs text-[#00f0ff] p-2 rounded focus:outline-none">
+                                <option value="filter">Filter Rows</option>
+                                <option value="select_columns">Select Columns</option>
+                                <option value="rename_column">Rename Column</option>
+                                <option value="cast_type">Cast Data Type</option>
+                            </select>
+                            <div id="op-params" class="space-y-2 text-xs"></div>
+                            <button id="add-op-btn" class="w-full bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] text-xs py-2 rounded font-semibold transition">ADD TO OPERATION STACK</button>
+                        </div>
+                    </div>
+
+                    <div id="view-rscript" class="space-y-4 hidden">
+                        <h2 class="text-base font-bold text-[#ffb000] tracking-widest uppercase">R SCRIPT EDITOR</h2>
+                        <p class="text-xs text-[#008b8b]">Write custom R code to manipulate dataframe 'df'.</p>
+                        <textarea id="r-script-input" rows="12" class="w-full bg-[#050b14] border border-[#008b8b] rounded p-2 text-xs font-mono text-[#00f0ff] focus:outline-none" placeholder="# Example: df <- df[df$col > 10, ]"></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-2 mt-4">
+                    <button id="run-pipeline-btn" class="w-full bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] text-xs py-2.5 rounded font-semibold transition tracking-wider">PREVIEW EXECUTION</button>
+                    <button id="proceed-visualize-btn" class="w-full bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] text-xs py-2.5 rounded font-semibold transition tracking-wider">PROCEED TO VISUALIZATION →</button>
+                </div>
+            </aside>
+
+            <section class="flex-1 flex flex-col hud-panel p-6 overflow-hidden gap-4 hud-border-teal">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#00f0ff]/30 pb-3 gap-2">
+                    <div class="space-y-1">
+                        <h2 class="text-lg font-bold text-[#ffb000] uppercase tracking-wider">[ TRANSFORMED DATA PREVIEW ]</h2>
+                        <p class="text-xs text-[#008b8b]">File: <span id="current-filename" class="text-[#00f0ff] font-mono"></span> <span class="text-[#ffb000]">|</span> Metrics: Rows <span id="row-count" class="text-[#00f0ff]">0</span> <span class="text-[#ffb000]">|</span> Columns <span id="col-count" class="text-[#00f0ff]">0</span></p>
+                    </div>
+                    <div class="flex gap-2 items-center w-full sm:w-auto">
+                        <input type="text" id="save-filename-input" value="transformed_output.csv" class="bg-[#050b14] border border-[#008b8b] rounded px-3 py-1.5 text-xs text-[#00f0ff] w-48 focus:outline-none">
+                        <button id="save-transformed-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] text-xs px-3 py-1.5 rounded font-semibold transition">SAVE FILE</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-x-auto overflow-y-auto rounded border border-[#008b8b] bg-[#050b14] relative">
+                    <div id="loading-overlay" class="absolute inset-0 bg-[#050b14]/70 backdrop-blur-xs flex items-center justify-center hidden z-20">
+                        <div class="text-[#ffb000] text-xs font-mono animate-pulse tracking-widest">[ EXECUTING SCRIPT & STREAMING DATA... ]</div>
+                    </div>
+                    <table class="w-full text-left text-sm text-[#00f0ff] border-collapse">
+                        <thead id="grid-header" class="bg-[#0a1128] text-[#ffb000] text-xs sticky top-0 border-b border-[#008b8b]"></thead>
+                        <tbody id="grid-body" class="divide-y divide-[#008b8b]/30"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <footer class="hud-panel bg-[#050b14] border border-[#008b8b] p-3 px-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs shrink-0">
+            <div class="flex items-center space-x-6">
+                <div>STATUS: <span id="footer-status" class="text-[#ffb000]">SYNCED</span></div>
+                <div>PERSISTENCE_STATE: <span id="footer-persistence" class="text-[#00f0ff]">ACTIVE</span></div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="footer-save-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] px-3 py-1.5 rounded font-semibold transition">QUICK SAVE</button>
+                <button id="footer-proceed-btn" class="bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] px-3 py-1.5 rounded font-semibold transition">PROCEED TO VISUALIZATION →</button>
+            </div>
+        </footer>
+    </main>
+
+    <div id="save-modal" class="fixed inset-0 bg-[#050b14]/80 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="hud-panel p-6 w-[480px] space-y-4 hud-border-teal bg-[#050b14]">
+            <h2 class="text-base font-bold text-[#ffb000] tracking-widest uppercase">[ CONFIRM & SAVE PIPELINE ]</h2>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[#008b8b] mb-1">TARGET FILENAME</label>
+                    <input type="text" id="modal-filename-input" class="w-full bg-[#050b14] border border-[#008b8b] rounded p-2 text-[#00f0ff] focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-[#008b8b] mb-1">FILE FORMAT</label>
+                    <select id="modal-format-select" class="w-full bg-[#050b14] border border-[#008b8b] rounded p-2 text-[#00f0ff] focus:outline-none">
+                        <option value=".csv">CSV (.csv)</option>
+                        <option value=".parquet">Parquet (.parquet)</option>
+                        <option value=".xlsx">Excel (.xlsx)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[#008b8b] mb-1">EXECUTION SUMMARY</label>
+                    <div id="modal-summary" class="bg-[#0a1128] border border-[#008b8b]/50 rounded p-2 text-[#00f0ff] font-mono max-h-32 overflow-y-auto"></div>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button id="modal-confirm-btn" class="flex-1 bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] py-2 rounded font-semibold transition tracking-wider text-xs">[CONFIRM & SAVE]</button>
+                <button id="modal-abort-btn" class="flex-1 bg-red-950/30 hover:bg-red-900/50 border border-red-500 text-red-400 py-2 rounded font-semibold transition tracking-wider text-xs">[ABORT]</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
+        }, 1000);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let rawFilename = urlParams.get('file') || "HR Data.xlsx";
+        
+        const baseName = rawFilename.replace("cleaned_", "").replace("transformed_", "");
+        const storedTransformedFile = localStorage.getItem('active_transformed_file_' + baseName);
+        const storedCleanedFile = localStorage.getItem('active_cleaned_file_' + baseName);
+        
+        let filename = urlParams.get('file');
+        if (!filename) {
+            filename = storedCleanedFile || ("cleaned_" + baseName);
+        }
+
+        document.getElementById('current-filename').textContent = filename;
+        document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
+        document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(baseName)}`;
+        document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(filename)}`;
+        document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(storedTransformedFile || "transformed_" + baseName)}`;
+
+        let operations = [];
+        let activeMode = 'pipeline';
+        let pendingAction = null;
+
+        const savedMode = localStorage.getItem('transform_mode_' + filename);
+        const savedOps = localStorage.getItem('transform_ops_' + filename);
+        const savedScript = localStorage.getItem('transform_rscript_' + filename);
+
+        if (savedMode) activeMode = savedMode;
+        if (savedOps) {
+            try { operations = JSON.parse(savedOps); } catch(e) {}
+        }
+        if (savedScript) {
+            document.getElementById('r-script-input').value = savedScript;
+        }
+
+        const btnPipeline = document.getElementById('mode-pipeline');
+        const btnRscript = document.getElementById('mode-rscript');
+        const viewPipeline = document.getElementById('view-pipeline');
+        const viewRscript = document.getElementById('view-rscript');
+
+        function syncModeUI() {
+            if (activeMode === 'rscript') {
+                btnRscript.className = 'flex-1 py-1.5 bg-[#008b8b]/40 text-[#00f0ff] transition';
+                btnPipeline.className = 'flex-1 py-1.5 bg-[#050b14] text-[#008b8b] transition';
+                viewRscript.classList.remove('hidden');
+                viewPipeline.classList.add('hidden');
+            } else {
+                btnPipeline.className = 'flex-1 py-1.5 bg-[#008b8b]/40 text-[#00f0ff] transition';
+                btnRscript.className = 'flex-1 py-1.5 bg-[#050b14] text-[#008b8b] transition';
+                viewPipeline.classList.remove('hidden');
+                viewRscript.classList.add('hidden');
+            }
+            localStorage.setItem('transform_mode_' + filename, activeMode);
+        }
+
+        syncModeUI();
+
+        btnPipeline.addEventListener('click', () => {
+            activeMode = 'pipeline';
+            syncModeUI();
+        });
+
+        btnRscript.addEventListener('click', () => {
+            activeMode = 'rscript';
+            syncModeUI();
+        });
+
+        document.getElementById('r-script-input').addEventListener('input', (e) => {
+            localStorage.setItem('transform_rscript_' + filename, e.target.value);
+            document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+        });
+
+        function renderParamsForm() {
+            const type = document.getElementById('op-type').value;
+            const container = document.getElementById('op-params');
+            if (type === 'filter') {
+                container.innerHTML = `
+                    <input type="text" id="p-col" placeholder="Column name" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                    <select id="p-cond" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                        <option value="==">Equals (==)</option>
+                        <option value="!=">Not Equals (!=)</option>
+                        <option value=">">Greater Than (&gt;)</option>
+                        <option value="<">Less Than (&lt;)</option>
+                        <option value="contains">Contains</option>
+                    </select>
+                    <input type="text" id="p-val" placeholder="Value" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                `;
+            } else if (type === 'select_columns') {
+                container.innerHTML = `<input type="text" id="p-cols" placeholder="Columns (comma separated)" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">`;
+            } else if (type === 'rename_column') {
+                container.innerHTML = `
+                    <input type="text" id="p-old" placeholder="Old column name" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                    <input type="text" id="p-new" placeholder="New column name" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                `;
+            } else if (type === 'cast_type') {
+                container.innerHTML = `
+                    <input type="text" id="p-col" placeholder="Column name" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                    <select id="p-type-target" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
+                        <option value="int">Integer</option>
+                        <option value="float">Float</option>
+                        <option value="str">String</option>
+                        <option value="datetime">Datetime</option>
+                    </select>
+                `;
+            }
+        }
+
+        document.getElementById('op-type').addEventListener('change', renderParamsForm);
+        renderParamsForm();
+
+        document.getElementById('add-op-btn').addEventListener('click', () => {
+            const type = document.getElementById('op-type').value;
+            let params = {};
+            if (type === 'filter') {
+                params = { column: document.getElementById('p-col').value, condition: document.getElementById('p-cond').value, value: document.getElementById('p-val').value };
+            } else if (type === 'select_columns') {
+                params = { columns: document.getElementById('p-cols').value.split(',').map(s => s.trim()) };
+            } else if (type === 'rename_column') {
+                params = { old_name: document.getElementById('p-old').value, new_name: document.getElementById('p-new').value };
+            } else if (type === 'cast_type') {
+                params = { column: document.getElementById('p-col').value, target_type: document.getElementById('p-type-target').value };
+            }
+            operations.push({ type, params });
+            updateOpsList();
+        });
+
+        function updateOpsList() {
+            localStorage.setItem('transform_ops_' + filename, JSON.stringify(operations));
+            document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+            const list = document.getElementById('operations-list');
+            if (operations.length === 0) {
+                list.innerHTML = `<p class="text-[#008b8b] italic">No transformation operations queued.</p>`;
+                return;
+            }
+            list.innerHTML = operations.map((op, idx) => `
+                <div class="bg-[#0a1128] border border-[#008b8b] p-2 rounded flex justify-between items-center">
+                    <span>${idx + 1}. ${op.type}</span>
+                    <button onclick="operations.splice(${idx},1); updateOpsList();" class="text-red-400 hover:text-red-200">×</button>
+                </div>
+            `).join('');
+        }
+
+        updateOpsList();
+
+        async function previewPipeline() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('hidden');
+            try {
+                let url = `/api/v1/transform/preview/${filename}`;
+                let payload = { operations };
+
+                if (activeMode === 'rscript') {
+                    url = `/api/v1/transform/r-preview/${filename}`;
+                    payload = { r_script: document.getElementById('r-script-input').value };
+                }
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Pipeline preview failed');
+
+                document.getElementById('row-count').textContent = data.transformed_rows;
+                document.getElementById('col-count').textContent = data.transformed_columns;
+
+                const headerRow = document.getElementById('grid-header');
+                const bodyRows = document.getElementById('grid-body');
+                headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-2 border-r border-[#008b8b]/50">${col}</th>`).join('') + '</tr>';
+                bodyRows.innerHTML = data.data.map(row => `<tr>` + data.columns.map(col => `<td class="p-2 border-r border-[#008b8b]/30">${row[col] !== undefined ? row[col] : ''}</td>`).join('') + `</tr>`).join('');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('run-pipeline-btn').addEventListener('click', previewPipeline);
+
+        function openSaveModal(actionType) {
+            pendingAction = actionType;
+            const currentInputVal = document.getElementById('save-filename-input').value.trim() || 'transformed_output.csv';
+            const baseName = currentInputVal.substring(0, currentInputVal.lastIndexOf('.')) || currentInputVal;
+            
+            document.getElementById('modal-filename-input').value = baseName;
+            
+            const summaryDiv = document.getElementById('modal-summary');
+            if (activeMode === 'rscript') {
+                const scriptText = document.getElementById('r-script-input').value;
+                summaryDiv.innerHTML = `Mode: R Script<br>Script Length: ${scriptText.length} chars<br>Lines: ${scriptText.split('\n').length}`;
+            } else {
+                if (operations.length === 0) {
+                    summaryDiv.innerHTML = `Mode: Pipeline<br>No operations queued.`;
+                } else {
+                    summaryDiv.innerHTML = operations.map((op, i) => `${i + 1}. ${op.type}`).join('<br>');
+                }
+            }
+
+            document.getElementById('save-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('modal-abort-btn').addEventListener('click', () => {
+            document.getElementById('save-modal').classList.add('hidden');
+        });
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+            const modalNameBase = document.getElementById('modal-filename-input').value.trim() || 'transformed_output';
+            const modalFormat = document.getElementById('modal-format-select').value;
+            const save_filename = modalNameBase.endsWith(modalFormat) ? modalNameBase : modalNameBase + modalFormat;
+            
+            document.getElementById('save-filename-input').value = save_filename;
+            document.getElementById('save-modal').classList.add('hidden');
+
+            const payload = activeMode === 'rscript' 
+                ? { save_filename, r_script: document.getElementById('r-script-input').value }
+                : { operations, save_filename };
+
+            try {
+                const res = await fetch(`/api/v1/transform/save/${filename}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Failed to save data');
+
+                document.getElementById('footer-status').textContent = 'SYNCED';
+                localStorage.setItem('transform_persisted_' + filename, 'true');
+
+                if (pendingAction === 'save') {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = save_filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    localStorage.setItem('active_transformed_file_' + filename, save_filename);
+                    alert('Transformed dataset saved successfully.');
+                } else if (pendingAction === 'visualize') {
+                    localStorage.setItem('transformation_done_' + filename, 'true');
+                    localStorage.setItem('active_transformed_file_' + filename, save_filename);
+                    window.location.href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        });
+
+        document.getElementById('save-transformed-btn').addEventListener('click', () => {
+            openSaveModal('save');
+        });
+
+        document.getElementById('proceed-visualize-btn').addEventListener('click', () => {
+            openSaveModal('visualize');
+        });
+
+        document.getElementById('footer-save-btn').addEventListener('click', () => {
+            openSaveModal('save');
+        });
+
+        document.getElementById('footer-proceed-btn').addEventListener('click', () => {
+            openSaveModal('visualize');
+        });
+
+        previewPipeline();
+    </script>
+</body>
+</html>
