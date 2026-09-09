@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+@layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #050b14;
+    background-image: linear-gradient(135deg, #050b14 0%, #0a1128 50%, #020408 100%);
+    background-attachment: fixed;
+  }
+}
+
+.hud-panel {
+  background: rgba(5, 15, 30, 0.75);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.05);
+  position: relative;
+  backdrop-filter: blur(4px);
+}
+
+.hud-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #00f0ff;
+  border-left: 2px solid #00f0ff;
+}
+
+.hud-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #00f0ff;
+  border-right: 2px solid #00f0ff;
+}
+
+.hud-border-teal {
+  border-color: rgba(0, 139, 139, 0.6);
+  box-shadow: 0 0 10px rgba(0, 139, 139, 0.2);
+}
+
+.hud-border-amber {
+  border-color: rgba(255, 176, 0, 0.6);
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.2);
+}
+
+.scanline {
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0, 240, 255, 0.03) 50%,
+    rgba(0, 240, 255, 0.03)
+  );
+  background-size: 100% 4px;
+}

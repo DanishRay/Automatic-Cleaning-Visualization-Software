@@ -3,63 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Cleaning Dashboard</title>
+    <title>DATA.AI.ENGINE // CLEANING GRID</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/output.css">
     <script src="/static/js/chart.umd.min.js"></script>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex">
-    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 justify-between shrink-0 sticky top-0 h-screen">
+<body class="scanline min-h-screen p-4 flex flex-col justify-between text-[#00f0ff] bg-[#050b14]">
+    <header class="hud-panel p-4 mb-4 flex justify-between items-center">
         <div>
-            <h2 class="text-base font-bold text-blue-400 mb-6 px-2 tracking-wide">Data AI Engine</h2>
-            <nav class="space-y-1.5">
-                <a href="#" id="sidebar-ingestion-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
-                    Ingestion & Schema
-                </a>
-                <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 text-white font-medium text-sm transition">
-                    Data Cleaning Grid
-                </a>
-                <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition">
-                    Visualization Studio
-                </a>
-            </nav>
+            <h1 class="text-xl font-bold tracking-widest text-[#00f0ff] uppercase">[SYS_CORE // CLEANING_GRID]</h1>
+            <p class="text-xs text-[#008b8b]">SECURE VECTOR LINK ACTIVE // STATUS: ONLINE</p>
         </div>
-    </aside>
-
-    <main class="flex-1 flex flex-col items-center justify-start p-8 overflow-y-auto gap-6">
-        <div class="w-full max-w-6xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-                <div>
-                    <h1 class="text-xl font-bold text-purple-400">Data Cleaning Dashboard</h1>
-                    <p class="text-xs text-gray-400 mt-1">File: <span id="current-filename" class="text-white font-mono"></span></p>
-                </div>
-                <div class="flex gap-3">
-                    <button id="apply-actions-btn" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">Execute Data Cleaning</button>
-                </div>
-            </div>
-
-            <div id="ai-actions-panel" class="bg-gray-950 border border-gray-800 rounded-xl p-5 mb-6">
-                <h3 class="text-sm font-bold text-purple-400 mb-2 uppercase tracking-wide">AI Data Cleaning Impact Summary</h3>
-                <p id="ai-summary-text" class="text-xs text-gray-300 leading-relaxed italic">Generating predictive impact analysis using local AI engine...</p>
-            </div>
-
-            <div class="overflow-x-auto max-h-[500px] rounded-xl border border-gray-800 bg-gray-950">
-                <table class="w-full text-left text-sm text-gray-300 border-collapse">
-                    <thead id="grid-header" class="bg-gray-900 text-gray-400 uppercase text-xs sticky top-0 border-b border-gray-800"></thead>
-                    <tbody id="grid-body" class="divide-y divide-gray-800/60"></tbody>
-                </table>
-            </div>
-
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
-                <div class="flex items-center gap-3">
-                    <input type="text" id="cleaned-filename-input" value="cleaned_output.csv" class="bg-gray-950 border border-gray-800 rounded px-3 py-2 text-xs text-gray-200 w-64">
-                    <button id="save-cleaned-btn" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition">Save & Download Cleaned Data</button>
-                </div>
-                <button id="proceed-visualize-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg text-xs font-semibold transition">Proceed to Visualization →</button>
-            </div>
+        <div class="flex space-x-6 text-xs text-[#ffb000]">
+            <div>CPU_LOAD: <span id="cpu-telemetry">32.1%</span></div>
+            <div>MEM_ALLOC: <span id="mem-telemetry">11.2 GB</span></div>
+            <div>SYS_TIME: <span id="time-telemetry">00:00:00</span></div>
         </div>
-    </main>
+    </header>
+
+    <div class="flex flex-col md:flex-row gap-4 flex-grow">
+        <aside class="w-full md:w-64 hud-panel p-4 flex flex-col justify-between shrink-0 hud-border-teal">
+            <div>
+                <h2 class="text-base font-bold text-[#00f0ff] mb-6 px-2 tracking-widest uppercase">DATA_AI_ENGINE</h2>
+                <nav class="space-y-2">
+                    <a href="#" id="sidebar-ingestion-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                        01. Ingestion & Schema
+                    </a>
+                    <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#00f0ff]/60 bg-[#00f0ff]/20 text-[#00f0ff] font-medium text-sm transition">
+                        02. Data Cleaning Grid
+                    </a>
+                    <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition">
+                        03. Visualization Studio
+                    </a>
+                </nav>
+            </div>
+            <div class="mt-6 text-[10px] text-[#008b8b] font-mono">
+                SEC_LEVEL: ALPHA<br>NODE: LOCAL_HOST
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col items-center justify-start hud-panel p-8 overflow-y-auto gap-6 hud-border-teal">
+            <div class="w-full max-w-6xl">
+                <div class="flex justify-between items-center mb-6 border-b border-[#00f0ff]/30 pb-4">
+                    <div>
+                        <h1 class="text-xl font-bold text-[#ffb000] uppercase tracking-wider">[ DATA CLEANING DASHBOARD ]</h1>
+                        <p class="text-xs text-[#008b8b] mt-1">File: <span id="current-filename" class="text-[#00f0ff] font-mono"></span></p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="apply-actions-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] px-4 py-2 rounded-xl text-sm font-semibold transition tracking-wider">EXECUTE DATA CLEANING</button>
+                    </div>
+                </div>
+
+                <div id="ai-actions-panel" class="bg-[#050b14] border border-[#ffb000]/60 rounded-xl p-5 mb-6 shadow-[0_0_10px_rgba(255,176,0,0.15)]">
+                    <h3 class="text-sm font-bold text-[#ffb000] mb-2 uppercase tracking-wide">AI Data Cleaning Impact Summary</h3>
+                    <p id="ai-summary-text" class="text-xs text-[#00f0ff] leading-relaxed italic">Generating predictive impact analysis using local AI engine...</p>
+                </div>
+
+                <div class="overflow-x-auto max-h-[500px] rounded border border-[#008b8b] bg-[#050b14]">
+                    <table class="w-full text-left text-sm text-[#00f0ff] border-collapse">
+                        <thead id="grid-header" class="bg-[#0a1128] text-[#ffb000] uppercase text-xs sticky top-0 border-b border-[#008b8b]"></thead>
+                        <tbody id="grid-body" class="divide-y divide-[#008b8b]/30"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-[#00f0ff]/30">
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="cleaned-filename-input" value="cleaned_output.csv" class="bg-[#050b14] border border-[#008b8b] rounded px-3 py-2 text-xs text-[#00f0ff] w-64 focus:border-[#00f0ff] focus:outline-none">
+                        <button id="save-cleaned-btn" class="bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] text-xs font-semibold px-4 py-2.5 rounded transition tracking-wider">SAVE & DOWNLOAD</button>
+                    </div>
+                    <button id="proceed-visualize-btn" class="bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] px-4 py-2.5 rounded text-xs font-semibold transition tracking-wider">PROCEED TO VISUALIZATION →</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="mt-4 text-center text-[10px] text-[#008b8b] tracking-widest">
+        DATA.AI.ENGINE HOLOGRAPHIC INTERFACE // AUTHORIZED ACCESS ONLY
+    </footer>
 
     <script>
+        setInterval(() => {
+            document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
+            document.getElementById('cpu-telemetry').innerText = (30 + Math.random() * 10).toFixed(1) + '%';
+        }, 1000);
+
         const urlParams = new URLSearchParams(window.location.search);
         const filename = urlParams.get('file');
         
@@ -87,15 +114,15 @@
                 const headerRow = document.getElementById('grid-header');
                 const bodyRows = document.getElementById('grid-body');
 
-                headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-3 border-r border-gray-800">${col}</th>`).join('') + '</tr>';
+                headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-3 border-r border-[#008b8b]/50">${col}</th>`).join('') + '</tr>';
                 
                 bodyRows.innerHTML = '';
                 data.data.forEach((row, rowIndex) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = data.columns.map(col => `
-                        <td class="p-2 border-r border-gray-800/50">
+                        <td class="p-2 border-r border-[#008b8b]/30">
                             <input type="text" value="${row[col] !== undefined ? row[col] : ''}" 
-                                   class="bg-transparent w-full focus:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-500 px-1 rounded text-gray-200"
+                                   class="bg-transparent w-full focus:bg-[#0a1128] focus:outline-none focus:ring-1 focus:ring-[#00f0ff] px-1 rounded text-[#00f0ff]"
                                    data-row="${rowIndex}" data-col="${col}">
                         </td>
                     `).join('');

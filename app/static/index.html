@@ -3,90 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local-First Data AI Engine</title>
+    <title>DATA.AI.ENGINE // COMMAND HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/output.css">
     <script src="/static/js/chart.umd.min.js"></script>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex">
-    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 justify-between shrink-0 sticky top-0 h-screen">
+<body class="scanline min-h-screen p-4 flex flex-col justify-between text-[#00f0ff] bg-[#050b14]">
+    <header class="hud-panel p-4 mb-4 flex justify-between items-center">
         <div>
-            <h2 class="text-base font-bold text-blue-400 mb-6 px-2 tracking-wide">Data AI Engine</h2>
-            <nav class="space-y-1.5">
-                <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 text-white font-medium text-sm transition">
-                    Ingestion & Schema
-                </a>
-                <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 bg-gray-900/50 pointer-events-none font-medium text-sm transition">
-                    Data Cleaning Grid
-                </a>
-                <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 bg-gray-900/50 pointer-events-none font-medium text-sm transition">
-                    Visualization Studio
-                </a>
-            </nav>
+            <h1 class="text-xl font-bold tracking-widest text-[#00f0ff] uppercase">[SYS_CORE // DATA_AI_ENGINE]</h1>
+            <p class="text-xs text-[#008b8b]">SECURE VECTOR LINK ACTIVE // STATUS: ONLINE</p>
         </div>
-    </aside>
+        <div class="flex space-x-6 text-xs text-[#ffb000]">
+            <div>CPU_LOAD: <span id="cpu-telemetry">34.2%</span></div>
+            <div>MEM_ALLOC: <span id="mem-telemetry">10.8 GB</span></div>
+            <div>SYS_TIME: <span id="time-telemetry">00:00:00</span></div>
+        </div>
+    </header>
 
-    <main class="flex-1 flex flex-col items-center justify-start p-8 overflow-y-auto">
-        <div class="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-8">
-            <h1 class="text-2xl font-bold mb-2 text-center">Data Ingestion & Cleaning</h1>
-            <p class="text-gray-400 text-sm text-center mb-6">Drag and drop your dataset to parse schema, metrics, and manage AI cleaning steps.</p>
-            
-            <div id="drop-zone" class="border-2 border-dashed border-gray-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-gray-950/50">
-                <input type="file" id="file-input" class="hidden" accept=".csv, .xlsx, .xls, .json, .parquet">
-                <p class="text-gray-300 font-medium mb-1">Drag & drop files here, or <span class="text-blue-400 underline">browse</span></p>
-                <p class="text-xs text-gray-500">Supports CSV, Excel, JSON, Parquet</p>
+    <div class="flex flex-col md:flex-row gap-4 flex-grow">
+        <aside class="w-full md:w-64 hud-panel p-4 flex flex-col justify-between shrink-0 hud-border-teal">
+            <div>
+                <h2 class="text-base font-bold text-[#00f0ff] mb-6 px-2 tracking-widest uppercase">DATA_AI_ENGINE</h2>
+                <nav class="space-y-2">
+                    <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded border border-[#00f0ff]/60 bg-[#00f0ff]/20 text-[#00f0ff] font-medium text-sm transition">
+                        01. Ingestion & Schema
+                    </a>
+                    <a href="#" id="sidebar-cleaning-link" class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-500 bg-[#050b14]/50 pointer-events-none font-medium text-sm transition">
+                        02. Data Cleaning Grid
+                    </a>
+                    <a href="#" id="sidebar-visualize-link" class="flex items-center gap-3 px-3 py-2.5 rounded text-gray-500 bg-[#050b14]/50 pointer-events-none font-medium text-sm transition">
+                        03. Visualization Studio
+                    </a>
+                </nav>
             </div>
-            
-            <div id="file-info" class="mt-4 text-sm text-gray-300 hidden">
-                <p><strong>Selected File:</strong> <span id="file-name"></span></p>
+            <div class="mt-6 text-[10px] text-[#008b8b] font-mono">
+                SEC_LEVEL: ALPHA<br>NODE: LOCAL_HOST
             </div>
+        </aside>
 
-            <button id="upload-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition hidden">
-                Upload & Parse Schema
-            </button>
-
-            <div id="result-container" class="mt-8 hidden">
-                <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
-                    <h2 class="text-lg font-semibold text-blue-400">Schema Profile & Metrics</h2>
-                    <div class="flex gap-4 text-sm text-gray-400">
-                        <span id="metric-rows" class="bg-gray-950 px-3 py-1 rounded-lg border border-gray-800"></span>
-                        <span id="metric-cols" class="bg-gray-950 px-3 py-1 rounded-lg border border-gray-800"></span>
-                    </div>
+        <main class="flex-1 flex flex-col items-center justify-start hud-panel p-8 overflow-y-auto hud-border-teal">
+            <div class="w-full max-w-5xl">
+                <h1 class="text-2xl font-bold mb-2 text-center text-[#00f0ff] tracking-wider uppercase">[ DATA INGESTION & SCHEMA ]</h1>
+                <p class="text-[#008b8b] text-xs text-center mb-6 tracking-wide">Drag and drop your dataset to parse schema, metrics, and manage AI cleaning steps.</p>
+                
+                <div id="drop-zone" class="border-2 border-dashed border-[#008b8b] hover:border-[#00f0ff] rounded-xl p-6 text-center cursor-pointer transition bg-[#050b14]/80">
+                    <input type="file" id="file-input" class="hidden" accept=".csv, .xlsx, .xls, .json, .parquet">
+                    <p class="text-[#00f0ff] font-medium mb-1">Drag & drop files here, or <span class="text-[#ffb000] underline">browse</span></p>
+                    <p class="text-xs text-[#008b8b]">Supports CSV, Excel, JSON, Parquet</p>
+                </div>
+                
+                <div id="file-info" class="mt-4 text-sm text-[#00f0ff] hidden">
+                    <p><strong>Selected File:</strong> <span id="file-name" class="text-[#ffb000]"></span></p>
                 </div>
 
-                <div class="overflow-x-auto rounded-xl border border-gray-800 mb-6">
-                    <table class="w-full text-left text-sm text-gray-300">
-                        <thead class="bg-gray-950 text-gray-400 uppercase text-xs border-b border-gray-800">
-                            <tr>
-                                <th class="p-3">Column Name</th>
-                                <th class="p-3">Data Type</th>
-                                <th class="p-3">Missing Values</th>
-                                <th class="p-3">Missing Ratio</th>
-                                <th class="p-3">Unique Values</th>
-                                <th class="p-3">PK Candidate</th>
-                            </tr>
-                        </thead>
-                        <tbody id="schema-table-body" class="divide-y divide-gray-800 bg-gray-900/50"></tbody>
-                    </table>
-                </div>
-
-                <button id="load-grid-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 rounded-xl transition">
-                    Proceed to Cleaning Grid & AI Summary
+                <button id="upload-btn" class="w-full mt-4 bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] font-semibold py-3 rounded-xl transition hidden tracking-wider">
+                    UPLOAD & PARSE SCHEMA
                 </button>
-            </div>
-        </div>
-    </main>
 
-    <div id="cleanup-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center">
-            <h3 class="text-base font-bold text-yellow-400 mb-2">Optimize Application Performance</h3>
-            <p class="text-xs text-gray-300 mb-6 leading-relaxed">Delete temp_storage content to clear out previous artifacts and keep application running smoothly.</p>
+                <div id="result-container" class="mt-8 hidden">
+                    <div class="flex justify-between items-center mb-4 border-b border-[#00f0ff]/30 pb-3">
+                        <h2 class="text-lg font-semibold text-[#00f0ff] uppercase tracking-wider">Schema Profile & Metrics</h2>
+                        <div class="flex gap-4 text-xs text-[#ffb000]">
+                            <span id="metric-rows" class="bg-[#050b14] px-3 py-1 rounded border border-[#008b8b]"></span>
+                            <span id="metric-cols" class="bg-[#050b14] px-3 py-1 rounded border border-[#008b8b]"></span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded border border-[#008b8b] mb-6 bg-[#050b14]/90">
+                        <table class="w-full text-left text-sm text-[#00f0ff]">
+                            <thead class="bg-[#0a1128] text-[#ffb000] uppercase text-xs border-b border-[#008b8b]">
+                                <tr>
+                                    <th class="p-3">Column Name</th>
+                                    <th class="p-3">Data Type</th>
+                                    <th class="p-3">Missing Values</th>
+                                    <th class="p-3">Missing Ratio</th>
+                                    <th class="p-3">Unique Values</th>
+                                    <th class="p-3">PK Candidate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schema-table-body" class="divide-y divide-[#008b8b]/30"></tbody>
+                        </table>
+                    </div>
+
+                    <button id="load-grid-btn" class="w-full bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] font-semibold py-3 rounded-xl transition tracking-wider">
+                        PROCEED TO CLEANING GRID & AI SUMMARY
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="mt-4 text-center text-[10px] text-[#008b8b] tracking-widest">
+        DATA.AI.ENGINE HOLOGRAPHIC INTERFACE // AUTHORIZED ACCESS ONLY
+    </footer>
+
+    <div id="cleanup-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="hud-panel hud-border-amber rounded-2xl p-6 max-w-md w-full shadow-2xl text-center">
+            <h3 class="text-base font-bold text-[#ffb000] mb-2 uppercase tracking-wider">Optimize Application Performance</h3>
+            <p class="text-xs text-[#00f0ff] mb-6 leading-relaxed">Delete temp_storage content to clear out previous artifacts and keep application running smoothly.</p>
             <div class="flex justify-center gap-3">
-                <button id="modal-continue-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition w-full">Continue</button>
+                <button id="modal-continue-btn" class="bg-[#ffb000]/20 hover:bg-[#ffb000]/40 border border-[#ffb000] text-[#ffb000] text-xs font-semibold px-5 py-2.5 rounded-xl transition w-full tracking-wider">CONTINUE</button>
             </div>
         </div>
     </div>
 
     <script>
+        setInterval(() => {
+            document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
+            document.getElementById('cpu-telemetry').innerText = (30 + Math.random() * 10).toFixed(1) + '%';
+        }, 1000);
+
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const fileInfo = document.getElementById('file-info');
@@ -111,11 +138,11 @@
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) triggerCleanupPrompt(e.target.files[0]);
         });
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-blue-500'); });
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-[#00f0ff]'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-[#00f0ff]'); });
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
-            dropZone.classList.remove('border-blue-500');
+            dropZone.classList.remove('border-[#00f0ff]');
             if (e.dataTransfer.files.length > 0) triggerCleanupPrompt(e.dataTransfer.files[0]);
         });
 
@@ -125,7 +152,7 @@
         }
 
         modalContinueBtn.addEventListener('click', async () => {
-            modalContinueBtn.textContent = 'Clearing Storage...';
+            modalContinueBtn.textContent = 'CLEARING STORAGE...';
             modalContinueBtn.disabled = true;
             
             try {
@@ -134,7 +161,7 @@
             } catch (err) {
                 console.warn('Cleanup error or endpoint missing:', err);
             } finally {
-                modalContinueBtn.textContent = 'Continue';
+                modalContinueBtn.textContent = 'CONTINUE';
                 modalContinueBtn.disabled = false;
                 cleanupModal.classList.add('hidden');
             }
@@ -157,7 +184,7 @@
             const formData = new FormData();
             formData.append('file', fileToUpload);
 
-            uploadBtn.textContent = 'Uploading & Parsing...';
+            uploadBtn.textContent = 'UPLOADING & PARSING...';
             uploadBtn.disabled = true;
 
             try {
@@ -170,11 +197,11 @@
 
                 if (sidebarCleaningLink) {
                     sidebarCleaningLink.href = `/cleaning.html?file=${encodeURIComponent(uploadedFilename)}`;
-                    sidebarCleaningLink.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition";
+                    sidebarCleaningLink.className = "flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition";
                 }
                 if (sidebarVisualizeLink) {
                     sidebarVisualizeLink.href = `/visualize.html?file=${encodeURIComponent(uploadedFilename)}`;
-                    sidebarVisualizeLink.className = "flex items-center gap-3 px-3 py-2.5 rounded-xl text-green-400 bg-gray-800/60 font-medium text-sm transition";
+                    sidebarVisualizeLink.className = "flex items-center gap-3 px-3 py-2.5 rounded border border-[#008b8b] bg-[#008b8b]/20 text-[#00f0ff] font-medium text-sm transition";
                 }
 
                 const schemaRes = await fetch(`/api/v1/data/schema/${uploadedFilename}`);
@@ -187,12 +214,12 @@
                 for (const [colName, stats] of Object.entries(schemaData.schema.columns)) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td class="p-3 font-medium text-white">${colName}</td>
-                        <td class="p-3"><span class="px-2 py-1 bg-blue-950 text-blue-400 rounded text-xs font-semibold">${stats.data_type}</span></td>
+                        <td class="p-3 font-medium text-[#00f0ff]">${colName}</td>
+                        <td class="p-3"><span class="px-2 py-1 bg-[#008b8b]/20 text-[#00f0ff] rounded text-xs font-semibold border border-[#008b8b]">${stats.data_type}</span></td>
                         <td class="p-3">${stats.missing_values}</td>
                         <td class="p-3">${(stats.missing_ratio * 100).toFixed(1)}%</td>
                         <td class="p-3">${stats.unique_values}</td>
-                        <td class="p-3">${stats.is_primary_key_candidate ? '<span class="text-green-400 font-bold">Yes</span>' : '<span class="text-gray-500">No</span>'}</td>
+                        <td class="p-3">${stats.is_primary_key_candidate ? '<span class="text-[#ffb000] font-bold">Yes</span>' : '<span class="text-gray-500">No</span>'}</td>
                     `;
                     schemaTableBody.appendChild(row);
                 }
@@ -201,7 +228,7 @@
             } catch (err) {
                 alert('Error: ' + err.message);
             } finally {
-                uploadBtn.textContent = 'Upload & Parse Schema';
+                uploadBtn.textContent = 'UPLOAD & PARSE SCHEMA';
                 uploadBtn.disabled = false;
             }
         }
