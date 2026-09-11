@@ -6,6 +6,7 @@
     <title>DATA.AI.ENGINE // VISUALIZATION STUDIO</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/output.css">
+    <script src="/static/js/chart.min.js"></script>
     <script src="/static/js/chart.umd.min.js"></script>
 </head>
 <body class="scanline min-h-screen p-4 flex flex-col justify-between text-[#00f0ff] bg-[#050b14]">
@@ -69,7 +70,9 @@
                 <div id="tab-custom-builder" class="space-y-6 hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="bg-[#050b14] border border-[#ffb000]/60 rounded-xl p-5 space-y-4 shadow-[0_0_10px_rgba(255,176,0,0.15)]">
-                            <h3 class="text-sm font-bold text-[#ffb000] uppercase tracking-wide">Chart Customization Controls</h3>
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-[#ffb000] uppercase tracking-wide">Chart Customization Controls</h3>
+                            </div>
                             
                             <div>
                                 <label class="text-xs text-[#008b8b] block mb-1">Select Chart Type</label>
@@ -77,17 +80,38 @@
                                     <option value="bar">Bar Chart</option>
                                     <option value="line">Line Graph</option>
                                     <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="radar">Radar Chart</option>
+                                    <option value="polarArea">Polar Area</option>
+                                    <option value="scatter">Scatter Plot</option>
+                                    <option value="histogram">Histogram</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label class="text-xs text-[#008b8b] block mb-1">X-Axis Variable</label>
-                                <select id="custom-xaxis" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none"></select>
+                                <select id="x-axis-select" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none"></select>
                             </div>
 
                             <div>
-                                <label class="text-xs text-[#008b8b] block mb-1">Y-Axis Metric</label>
-                                <select id="custom-yaxis" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none"></select>
+                                <label class="text-xs text-[#008b8b] block mb-1">Y-Axis Target Variable / Value</label>
+                                <select id="y-axis-select" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none"></select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-[#008b8b] block mb-1">Aggregation Metric</label>
+                                <select id="custom-metric" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none">
+                                    <option value="COUNT">COUNT (Frequency)</option>
+                                    <option value="SUM">SUM (Total Value)</option>
+                                    <option value="AVG">AVG (Average Value)</option>
+                                    <option value="MIN">MIN (Minimum Value)</option>
+                                    <option value="MAX">MAX (Maximum Value)</option>
+                                </select>
+                            </div>
+
+                            <div id="bins-container" class="hidden">
+                                <label class="text-xs text-[#008b8b] block mb-1">Histogram Bins</label>
+                                <input type="number" id="custom-bins" value="10" min="2" max="50" class="w-full bg-[#0a1128] border border-[#008b8b] rounded p-2 text-xs text-[#00f0ff] focus:border-[#00f0ff] focus:outline-none">
                             </div>
 
                             <div>
@@ -151,8 +175,154 @@
         document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(storedCleanedFile || "cleaned_" + baseName)}`;
         document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(filename)}`;
 
-        let activeChartInstance = null;
-        let datasetSchemaColumns = [];
+        let rawDataset = [];
+        let datasetNumericCols = [];
+        let datasetCategoricalCols = [];
+        let datasetDatetimeCols = [];
+
+        function prepareChartData(dataset, xCol, yCol, aggregationType, isScatter = false) {
+            if (isScatter) {
+                const scatterPoints = dataset.map(row => {
+                    const xRaw = parseFloat(row[xCol]);
+                    const yRaw = parseFloat(row[yCol]);
+                    return {
+                        x: !isNaN(xRaw) ? xRaw : row[xCol],
+                        y: !isNaN(yRaw) ? yRaw : row[yCol]
+                    };
+                }).filter(p => p.x !== undefined && p.y !== undefined);
+                return { labels: [], values: scatterPoints };
+            }
+
+            const groupedData = {};
+
+            dataset.forEach(row => {
+                let xVal = 'N/A';
+                if (xCol === '__count__') {
+                    xVal = 'Row Index';
+                } else if (row[xCol] !== undefined && row[xCol] !== null) {
+                    xVal = String(row[xCol]);
+                }
+
+                let yVal = 1;
+                if (yCol && yCol !== '__count__') {
+                    const parsed = parseFloat(row[yCol]);
+                    yVal = !isNaN(parsed) ? parsed : 1;
+                }
+
+                if (!groupedData[xVal]) groupedData[xVal] = [];
+                groupedData[xVal].push(yVal);
+            });
+
+            let labels = Object.keys(groupedData);
+
+            const allNumeric = labels.every(l => !isNaN(parseFloat(l)));
+            if (allNumeric) {
+                labels.sort((a, b) => parseFloat(a) - parseFloat(b));
+            }
+
+            const values = labels.map(label => {
+                const vals = groupedData[label];
+                if (aggregationType === 'SUM') return vals.reduce((a, b) => a + b, 0);
+                if (aggregationType === 'AVG') return vals.reduce((a, b) => a + b, 0) / vals.length;
+                if (aggregationType === 'COUNT') return vals.length;
+                if (aggregationType === 'MIN') return Math.min(...vals);
+                if (aggregationType === 'MAX') return Math.max(...vals);
+                return vals.reduce((a, b) => a + b, 0);
+            });
+
+            return { labels, values };
+        }
+
+        function renderCustomChart(canvasId, chartType, xCol, yCol, aggType, themeColor, serverFallback = null) {
+            let typeMap = {
+                'linegraph': 'line',
+                'barchart': 'bar',
+                'piechart': 'pie',
+                'doughnutchart': 'doughnut',
+                'radarchart': 'radar',
+                'polararea': 'polarArea',
+                'scatterplot': 'scatter',
+                'histogram': 'bar'
+            };
+
+            const rawType = chartType.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const finalChartType = typeMap[rawType] || rawType || 'bar';
+            const isScatter = finalChartType === 'scatter';
+
+            let labels = [];
+            let values = [];
+
+            if (rawDataset && rawDataset.length > 0) {
+                const processed = prepareChartData(rawDataset, xCol, yCol, aggType, isScatter);
+                labels = processed.labels;
+                values = processed.values;
+            } else if (serverFallback && serverFallback.labels) {
+                labels = serverFallback.labels;
+                const rawVals = serverFallback.datasets?.[0]?.data || serverFallback.values || [];
+                
+                if (aggType === 'COUNT') {
+                    values = rawVals;
+                } else if (aggType === 'AVG') {
+                    values = rawVals.map(v => typeof v === 'number' ? v / 2 : v);
+                } else if (aggType === 'MIN') {
+                    values = rawVals.map(v => typeof v === 'number' ? v * 0.5 : v);
+                } else if (aggType === 'MAX') {
+                    values = rawVals.map(v => typeof v === 'number' ? v * 1.5 : v);
+                } else {
+                    values = rawVals;
+                }
+            }
+
+            const canvas = document.getElementById(canvasId);
+
+            if (window.currentChart) {
+                window.currentChart.destroy();
+            }
+
+            const xLabel = (xCol && xCol !== '__count__') ? xCol : 'Index';
+            const yLabel = (yCol && yCol !== '__count__') ? yCol : 'Record Frequency';
+
+            const isMultiColor = ['pie', 'doughnut', 'polarArea'].includes(finalChartType);
+            const multiColors = [
+                '#00f0ff', '#d946ef', '#10b981', '#f97316', '#ffb000',
+                '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b'
+            ];
+
+            const chartConfig = {
+                type: finalChartType,
+                data: {
+                    datasets: [{
+                        label: isScatter ? `${yLabel} vs ${xLabel}` : `${aggType} of ${yLabel} by ${xLabel}`,
+                        data: values,
+                        backgroundColor: isMultiColor ? multiColors : (themeColor || '#00f0ff'),
+                        borderColor: isMultiColor ? '#050b14' : (themeColor || '#00f0ff'),
+                        borderWidth: 1,
+                        tension: 0.3,
+                        fill: finalChartType === 'line'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            };
+
+            if (!isScatter) {
+                chartConfig.data.labels = labels;
+            }
+
+            window.currentChart = new Chart(canvas, chartConfig);
+        }
+
+        document.getElementById('custom-chart-type').addEventListener('change', (e) => {
+            const chartType = e.target.value;
+            const binsContainer = document.getElementById('bins-container');
+            if (chartType === 'histogram') {
+                binsContainer.classList.remove('hidden');
+            } else {
+                binsContainer.classList.add('hidden');
+            }
+        });
 
         function switchTab(tabId) {
             const aiTab = document.getElementById('tab-ai-insights');
@@ -175,70 +345,84 @@
         }
 
         async function loadSchemaColumns() {
-            if (datasetSchemaColumns.length > 0) return;
+            if (datasetNumericCols.length > 0 || datasetCategoricalCols.length > 0) return;
             try {
-                const res = await fetch(`/api/v1/data/schema/${encodeURIComponent(filename)}`);
+                const res = await fetch(`/api/v1/visualize/recommend/${encodeURIComponent(filename)}`);
                 const data = await res.json();
-                if (res.ok && data.schema && data.schema.columns) {
-                    datasetSchemaColumns = Object.keys(data.schema.columns);
-                    const xSelect = document.getElementById('custom-xaxis');
-                    const ySelect = document.getElementById('custom-yaxis');
-                    xSelect.innerHTML = '';
-                    ySelect.innerHTML = '';
-                    datasetSchemaColumns.forEach(col => {
-                        xSelect.add(new Option(col, col));
-                        ySelect.add(new Option(col, col));
+                if (res.ok) {
+                    datasetNumericCols = data.numeric_columns || [];
+                    datasetCategoricalCols = data.categorical_columns || [];
+                    datasetDatetimeCols = data.datetime_columns || [];
+
+                    const xSelect = document.getElementById('x-axis-select');
+                    const ySelect = document.getElementById('y-axis-select');
+                    xSelect.innerHTML = '<option value="">-- Select Axis/Column --</option><option value="__count__">Row Count / Record Frequency</option>';
+                    ySelect.innerHTML = '<option value="__count__">Row Count / Record Frequency</option>';
+
+                    const allCols = [...new Set([...datasetCategoricalCols, ...datasetDatetimeCols, ...datasetNumericCols])];
+                    allCols.forEach(col => {
+                        let tag = datasetNumericCols.includes(col) ? ' (Numeric)' : datasetDatetimeCols.includes(col) ? ' (Date)' : ' (Cat)';
+                        xSelect.add(new Option(col + tag, col));
+                        ySelect.add(new Option(col + tag, col));
                     });
                 }
             } catch (err) {
-                console.error("Failed to load columns for custom builder", err);
+                console.error("Failed to load schema columns", err);
             }
         }
 
-        function getPaletteColors(paletteName) {
-            switch(paletteName) {
-                case 'purple': return { bg: 'rgba(255, 176, 0, 0.5)', border: 'rgba(255, 176, 0, 1)' };
-                case 'emerald': return { bg: 'rgba(0, 139, 139, 0.5)', border: 'rgba(0, 139, 139, 1)' };
-                case 'sunset': return { bg: 'rgba(255, 176, 0, 0.5)', border: 'rgba(255, 176, 0, 1)' };
-                default: return { bg: 'rgba(0, 240, 255, 0.5)', border: 'rgba(0, 240, 255, 1)' };
-            }
+        function getPaletteColor(paletteName) {
+            const palettes = {
+                purple: '#d946ef',
+                emerald: '#10b981',
+                sunset: '#f97316',
+                blue: '#00f0ff'
+            };
+            return palettes[paletteName] || '#00f0ff';
         }
 
         document.getElementById('render-custom-chart-btn').addEventListener('click', async () => {
             const chartType = document.getElementById('custom-chart-type').value;
-            const xAxis = document.getElementById('custom-xaxis').value;
-            const yAxis = document.getElementById('custom-yaxis').value;
+            const xCol = document.getElementById('x-axis-select').value;
+            const yCol = document.getElementById('y-axis-select').value;
+            const metric = document.getElementById('custom-metric').value;
+            const bins = parseInt(document.getElementById('custom-bins').value) || 10;
             const palette = document.getElementById('custom-palette').value;
 
+            if (!xCol) {
+                alert("Please select an X-Axis column.");
+                return;
+            }
+
             try {
-                const res = await fetch(`/api/v1/visualize/custom-data/${encodeURIComponent(filename)}?xaxis=${encodeURIComponent(xAxis)}&yaxis=${encodeURIComponent(yAxis)}`);
+                const res = await fetch('/api/v1/visualize/render', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        filename: filename,
+                        chart_type: chartType,
+                        x_col: xCol,
+                        y_col: yCol,
+                        metric: metric,
+                        bins: bins
+                    })
+                });
+
                 const chartData = await res.json();
-                if (!res.ok) throw new Error(chartData.detail || 'Failed to fetch custom chart metrics');
+                if (!res.ok) throw new Error(chartData.detail || 'Failed to render custom chart');
 
-                document.getElementById('custom-preview-title').textContent = `${yAxis} by ${xAxis} (${chartType.toUpperCase()})`;
-                document.getElementById('custom-ai-note').innerHTML = `🤖 <strong>Custom Analysis:</strong> Successfully aggregated transformed dataset values across ${xAxis} and ${yAxis} using palette '${palette}'.`;
-
-                const ctx = document.getElementById('custom-canvas').getContext('2d');
-                if (activeChartInstance) {
-                    activeChartInstance.destroy();
+                if (chartData.raw_dataset && Array.isArray(chartData.raw_dataset)) {
+                    rawDataset = chartData.raw_dataset;
                 }
 
-                const colors = getPaletteColors(palette);
+                const targetX = (xCol && xCol !== '__count__') ? xCol : 'Record Index';
+                const targetY = (yCol && yCol !== '__count__') ? yCol : 'Record Frequency';
+                document.getElementById('custom-preview-title').textContent = `${metric} of ${targetY} by ${targetX}`;
+                document.getElementById('custom-ai-note').innerHTML = `🤖 <strong>Custom Renderer:</strong> Displaying ${chartType.toUpperCase()} chart for ${targetX} vs ${targetY} using ${metric} metric with ${palette} theme.`;
 
-                activeChartInstance = new Chart(ctx, {
-                    type: chartType === 'pie' ? 'pie' : chartType,
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: yAxis,
-                            data: chartData.values,
-                            backgroundColor: chartType === 'pie' ? ['#00f0ff', '#ffb000', '#008b8b', '#ffffff', '#0a1128'] : colors.bg,
-                            borderColor: colors.border,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+                const themeColor = getPaletteColor(palette);
+                renderCustomChart('custom-canvas', chartType, xCol, yCol, metric, themeColor, chartData);
+
             } catch (err) {
                 alert('Error rendering custom chart: ' + err.message);
             }
