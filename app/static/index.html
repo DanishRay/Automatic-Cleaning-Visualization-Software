@@ -198,6 +198,7 @@
                 if (!uploadRes.ok) throw new Error(uploadData.detail || 'Upload failed');
 
                 uploadedFilename = uploadData.filename;
+                localStorage.setItem('activeDatasetId', uploadData.dataset_id || uploadData.filename);
                 localStorage.setItem('uploaded_file', uploadedFilename);
 
                 if (sidebarCleaningLink) {

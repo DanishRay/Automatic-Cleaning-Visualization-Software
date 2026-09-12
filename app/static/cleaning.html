@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/output.css">
     <script src="/static/js/chart.min.js"></script>
-    <script src="app/static/js/chart.umd.min.js"></script>
+    <script src="/static/js/chart.umd.min.js"></script>
 </head>
 <body class="scanline min-h-screen p-4 flex flex-col justify-between text-[#00f0ff] bg-[#050b14]">
     <header class="hud-panel p-4 mb-4 flex justify-between items-center">
@@ -86,42 +86,36 @@
     </footer>
 
     <script>
+        let cachedActions = {};
+
         setInterval(() => {
             document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
             document.getElementById('cpu-telemetry').innerText = (30 + Math.random() * 10).toFixed(1) + '%';
         }, 1000);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const filename = urlParams.get('file');
-        
-        if (!filename) {
-            alert('No file specified!');
-            window.location.href = '/';
+        function renderSummary() {
+            if (!window.currentDataset) return;
+            const summary = window.currentDataset?.summary || window.currentDataset?.cleaning_summary;
+            if (!summary) return;
+            document.getElementById('ai-summary-text').textContent = summary;
         }
 
-        document.getElementById('current-filename').textContent = filename;
-        document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(filename)}`;
-        document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(filename)}`;
-        document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent("cleaned_" + filename)}`;
-        document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent("cleaned_" + filename)}`;
-        
-        let cachedActions = {};
+        function renderTable(data) {
+            if (!data) return;
+            cachedActions = data.ai_actions || {};
+            
+            const summaryText = data.cleaning_summary || window.currentDataset?.summary || "No summary generated.";
+            document.getElementById('ai-summary-text').textContent = summaryText;
 
-        async function loadCleaningPage() {
-            try {
-                const res = await fetch(`/api/v1/cleaning/grid/${filename}`);
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Failed to load grid');
+            const headerRow = document.getElementById('grid-header');
+            const bodyRows = document.getElementById('grid-body');
 
-                cachedActions = data.ai_actions || {};
-                document.getElementById('ai-summary-text').textContent = data.cleaning_summary || "No summary generated.";
-
-                const headerRow = document.getElementById('grid-header');
-                const bodyRows = document.getElementById('grid-body');
-
+            if (data.columns) {
                 headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-3 border-r border-[#008b8b]/50">${col}</th>`).join('') + '</tr>';
-                
-                bodyRows.innerHTML = '';
+            }
+
+            bodyRows.innerHTML = '';
+            if (data.data) {
                 data.data.forEach((row, rowIndex) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = data.columns.map(col => `
@@ -133,12 +127,70 @@
                     `).join('');
                     bodyRows.appendChild(tr);
                 });
-            } catch (err) {
-                alert('Error: ' + err.message);
             }
         }
 
+        function showError(msg) {
+            alert(msg);
+        }
+
+        function getActiveFilename() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let name = urlParams.get('file');
+            if (!name || name === "null" || name === "undefined") {
+                name = localStorage.getItem('activeDatasetId') || localStorage.getItem('last_uploaded_file');
+            }
+            return name;
+        }
+
+        const filename = getActiveFilename();
+
+        if (filename) {
+            document.getElementById('current-filename').textContent = filename;
+            const baseName = filename.replace(/^cleaned_/, "").replace(/^transformed_/, "");
+            
+            document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
+            document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(filename)}`;
+            document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent("cleaned_" + baseName)}`;
+            document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent("cleaned_" + baseName)}`;
+        }
+
+        async function loadCleaningPage() {
+            if (!filename) return;
+            
+            try {
+                const res = await fetch(`/api/v1/cleaning/grid/${encodeURIComponent(filename)}`);
+                if (!res.ok) {
+                    if (window.currentDataset) return;
+                    throw new Error(`Dataset '${filename}' not found in server storage.`);
+                }
+                const data = await res.json();
+                window.currentDataset = data;
+                sessionStorage.setItem('currentDataset', JSON.stringify(data));
+                renderTable(data);
+                renderSummary();
+            } catch (err) {
+                if (!window.currentDataset) {
+                    showError(err.message);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedData = sessionStorage.getItem('currentDataset');
+            if (savedData) {
+                window.currentDataset = JSON.parse(savedData);
+                renderTable(window.currentDataset);
+                renderSummary();
+            }
+            
+            if (filename) {
+                loadCleaningPage();
+            }
+        });
+
         document.getElementById('apply-actions-btn').addEventListener('click', async () => {
+            if (!filename) return;
             try {
                 const res = await fetch(`/api/v1/cleaning/apply-actions/${filename}`, {
                     method: 'POST',
@@ -153,13 +205,20 @@
                 document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(cleanedTargetName)}`;
                 document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(cleanedTargetName)}`;
                 
+                if (data.data && data.columns) {
+                    window.currentDataset = { ...window.currentDataset, ...data };
+                    sessionStorage.setItem('currentDataset', JSON.stringify(window.currentDataset));
+                    renderTable(data);
+                }
+                
                 alert('AI cleaning plan successfully applied to memory cache.');
             } catch (err) {
-                alert('Error: ' + err.message);
+                showError('Error: ' + err.message);
             }
         });
 
         document.getElementById('save-cleaned-btn').addEventListener('click', async () => {
+            if (!filename) return;
             const save_filename = document.getElementById('cleaned-filename-input').value.trim() || 'cleaned_output.csv';
             try {
                 const res = await fetch(`/api/v1/cleaning/save-cleaned/${filename}`, {
@@ -207,17 +266,16 @@
                 document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(save_filename)}`;
                 document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
             } catch (err) {
-                alert('Error: ' + err.message);
+                showError('Error: ' + err.message);
             }
         });
 
         document.getElementById('proceed-transform-btn').addEventListener('click', () => {
+            if (!filename) return;
             localStorage.setItem('cleaning_done_' + filename, 'true');
             const activeCleaned = localStorage.getItem('active_cleaned_file_' + filename) || ("cleaned_" + filename);
             window.location.href = `/transform.html?file=${encodeURIComponent(activeCleaned)}`;
         });
-
-        loadCleaningPage();
     </script>
 </body>
 </html>

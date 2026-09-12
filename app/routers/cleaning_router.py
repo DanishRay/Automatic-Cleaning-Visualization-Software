@@ -1,11 +1,11 @@
+import os
+import pandas as pd
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.services.data_service import DataService
 from app.services.cleaning_service import CleaningService
 from app.services.ai_service import AIService
-import os
-import pandas as pd
 
 router = APIRouter(prefix="/api/v1/cleaning", tags=["Data Cleaning"])
 ai_service = AIService()
@@ -55,7 +55,7 @@ async def get_cleaning_grid(filename: str, limit: int = 100):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/apply-actions/{filename}")
-async def apply_cleaning_actions(filename: str, payload: dict = Body(...)):
+async def apply_cleaning_actions(filename: str, payload: dict = Body(...), limit: int = 100):
     file_path = os.path.join("temp_storage", filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found in storage.")
@@ -84,7 +84,13 @@ async def apply_cleaning_actions(filename: str, payload: dict = Body(...)):
         else:
             df.to_csv(save_path, index=False)
         
-        return {"status": "success", "cleaned_filename": cleaned_filename, "rows": len(df)}
+        return {
+            "status": "success", 
+            "cleaned_filename": cleaned_filename, 
+            "rows": len(df),
+            "columns": df.columns.tolist(),
+            "data": df.head(limit).fillna("").to_dict(orient="records")
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

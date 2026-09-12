@@ -44,6 +44,11 @@
             </div>
         </header>
 
+        <div id="error-banner" class="hidden bg-red-950/80 border border-red-500 text-red-200 px-4 py-3 rounded relative text-xs font-mono shrink-0 flex justify-between items-center">
+            <span id="error-banner-text"></span>
+            <button onclick="clearErrorBanner()" class="text-red-400 hover:text-red-100 font-bold ml-4">✕</button>
+        </div>
+
         <div class="flex flex-row gap-4 flex-1 overflow-hidden">
             <aside class="w-80 hud-panel p-4 flex flex-col justify-between shrink-0 hud-border-teal overflow-y-auto">
                 <div class="space-y-4">
@@ -96,11 +101,11 @@
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-x-auto overflow-y-auto rounded border border-[#008b8b] bg-[#050b14] relative">
+                <div id="dataframe-container" class="flex-1 overflow-x-auto overflow-y-auto rounded border border-[#008b8b] bg-[#050b14] relative">
                     <div id="loading-overlay" class="absolute inset-0 bg-[#050b14]/70 backdrop-blur-xs flex items-center justify-center hidden z-20">
                         <div class="text-[#ffb000] text-xs font-mono animate-pulse tracking-widest">[ EXECUTING SCRIPT & STREAMING DATA... ]</div>
                     </div>
-                    <table class="w-full text-left text-sm text-[#00f0ff] border-collapse">
+                    <table id="transformationTable" class="w-full text-left text-sm text-[#00f0ff] border-collapse">
                         <thead id="grid-header" class="bg-[#0a1128] text-[#ffb000] text-xs sticky top-0 border-b border-[#008b8b]"></thead>
                         <tbody id="grid-body" class="divide-y divide-[#008b8b]/30"></tbody>
                     </table>
@@ -149,31 +154,110 @@
     </div>
 
     <script>
+        let operations = [];
+        let activeMode = 'pipeline';
+        let pendingAction = null;
+        let hasUnsavedChanges = false;
+
         setInterval(() => {
             document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
         }, 1000);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        let rawFilename = urlParams.get('file') || "HR Data.xlsx";
-        
-        const baseName = rawFilename.replace("cleaned_", "").replace("transformed_", "");
-        const storedTransformedFile = localStorage.getItem('active_transformed_file_' + baseName);
-        const storedCleanedFile = localStorage.getItem('active_cleaned_file_' + baseName);
-        
-        let filename = urlParams.get('file');
-        if (!filename) {
-            filename = storedCleanedFile || ("cleaned_" + baseName);
+        function showErrorBanner(msg) {
+            const banner = document.getElementById('error-banner');
+            const text = document.getElementById('error-banner-text');
+            if (banner && text) {
+                text.textContent = msg;
+                banner.classList.remove('hidden');
+            } else {
+                alert(msg);
+            }
         }
 
-        document.getElementById('current-filename').textContent = filename;
-        document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
-        document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(baseName)}`;
-        document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(filename)}`;
-        document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent(storedTransformedFile || "transformed_" + baseName)}`;
+        function clearErrorBanner() {
+            const banner = document.getElementById('error-banner');
+            if (banner) {
+                banner.classList.add('hidden');
+            }
+        }
 
-        let operations = [];
-        let activeMode = 'pipeline';
-        let pendingAction = null;
+        function renderSummary() {
+            if (!window.currentDataset) return;
+            const summary = window.currentDataset?.summary;
+            if (!summary) return;
+        }
+
+        function getEditorContent() {
+            return document.getElementById('r-script-input').value;
+        }
+
+        function bindTableCellEvents() {
+            document.querySelectorAll('#transformationTable input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const rowIndex = e.target.dataset.row;
+                    const colName = e.target.dataset.col;
+                    if (window.currentDataset && window.currentDataset.data && window.currentDataset.data[rowIndex]) {
+                        window.currentDataset.data[rowIndex][colName] = e.target.value;
+                        sessionStorage.setItem('currentDataset', JSON.stringify(window.currentDataset));
+                        document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+                        hasUnsavedChanges = true;
+                    }
+                });
+            });
+        }
+
+        function renderPreviewTable(rows, columns) {
+            const tableContainer = document.getElementById('dataframe-container');
+            
+            let html = '<table id="transformationTable" class="w-full text-left text-sm text-[#00f0ff] border-collapse"><thead id="grid-header" class="bg-[#0a1128] text-[#ffb000] text-xs sticky top-0 border-b border-[#008b8b]"><tr>';
+            columns.forEach(col => {
+                html += `<th class="p-2 border-r border-[#008b8b]/50">${col}</th>`;
+            });
+            html += '</tr></thead><tbody id="grid-body" class="divide-y divide-[#008b8b]/30">';
+            
+            rows.forEach((row, rIdx) => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const val = row[col] ?? '';
+                    html += `<td class="p-1 border-r border-[#008b8b]/30"><input type="text" data-row="${rIdx}" data-col="${col}" value="${val}" class="w-full bg-transparent text-[#00f0ff] focus:bg-[#0a1128] focus:outline-none px-1 rounded"></td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            tableContainer.innerHTML = html;
+            bindTableCellEvents();
+        }
+
+        function renderTable(data) {
+            if (!data) return;
+            if (data.rows !== undefined) document.getElementById('row-count').textContent = data.rows;
+            if (data.columns_count !== undefined) document.getElementById('col-count').textContent = data.columns_count;
+
+            renderPreviewTable(data.data || [], data.columns || []);
+        }
+
+        function getTransformFilename() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let file = urlParams.get('file');
+            
+            if (!file || file === "null" || file === "undefined") {
+                file = localStorage.getItem('activeDatasetId') || localStorage.getItem('last_uploaded_file');
+            }
+            return file;
+        }
+
+        const filename = getTransformFilename();
+
+        if (filename) {
+            document.getElementById('current-filename').textContent = filename;
+            const baseName = filename.replace(/^cleaned_/, "").replace(/^transformed_/, "");
+            
+            document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
+            document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(baseName)}`;
+            document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(filename)}`;
+            document.getElementById('sidebar-visualize-link').href = `/visualize.html?file=${encodeURIComponent("transformed_" + baseName)}`;
+        }
 
         const savedMode = localStorage.getItem('transform_mode_' + filename);
         const savedOps = localStorage.getItem('transform_ops_' + filename);
@@ -222,6 +306,7 @@
         document.getElementById('r-script-input').addEventListener('input', (e) => {
             localStorage.setItem('transform_rscript_' + filename, e.target.value);
             document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+            hasUnsavedChanges = true;
         });
 
         function renderParamsForm() {
@@ -262,6 +347,46 @@
         document.getElementById('op-type').addEventListener('change', renderParamsForm);
         renderParamsForm();
 
+        async function executePreview() {
+            clearErrorBanner();
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+
+            // Align payload structure with backend model
+            const payload = activeMode === 'rscript' 
+                ? { r_script: getEditorContent() }
+                : { operations: operations };
+
+            try {
+                // Update endpoint path to target the correct FastAPI prefix and parameter
+                const response = await fetch(`/api/v1/transform/preview/${encodeURIComponent(filename)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showErrorBanner(data.detail || "Error executing transformation preview.");
+                    return;
+                }
+                
+                window.currentDataset = data;
+                sessionStorage.setItem('currentDataset', JSON.stringify(data));
+                
+                if (data.rows !== undefined) document.getElementById('row-count').textContent = data.rows;
+                if (data.columns_count !== undefined) document.getElementById('col-count').textContent = data.columns_count;
+
+                renderPreviewTable(data.data || [], data.columns || []);
+            } catch (err) {
+                console.error('Error updating preview:', err);
+                showErrorBanner("System error encountered while connecting to execution engine.");
+            } finally {
+                if (overlay) overlay.classList.add('hidden');
+            }
+        }
+
         document.getElementById('add-op-btn').addEventListener('click', () => {
             const type = document.getElementById('op-type').value;
             let params = {};
@@ -276,11 +401,13 @@
             }
             operations.push({ type, params });
             updateOpsList();
+            executePreview();
         });
 
         function updateOpsList() {
             localStorage.setItem('transform_ops_' + filename, JSON.stringify(operations));
             document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+            hasUnsavedChanges = true;
             const list = document.getElementById('operations-list');
             if (operations.length === 0) {
                 list.innerHTML = `<p class="text-[#008b8b] italic">No transformation operations queued.</p>`;
@@ -289,50 +416,28 @@
             list.innerHTML = operations.map((op, idx) => `
                 <div class="bg-[#0a1128] border border-[#008b8b] p-2 rounded flex justify-between items-center">
                     <span>${idx + 1}. ${op.type}</span>
-                    <button onclick="operations.splice(${idx},1); updateOpsList();" class="text-red-400 hover:text-red-200">×</button>
+                    <button onclick="operations.splice(${idx},1); updateOpsList(); executePreview();" class="text-red-400 hover:text-red-200">×</button>
                 </div>
             `).join('');
         }
 
         updateOpsList();
 
-        async function previewPipeline() {
-            const loadingOverlay = document.getElementById('loading-overlay');
-            loadingOverlay.classList.remove('hidden');
-            try {
-                let url = `/api/v1/transform/preview/${filename}`;
-                let payload = { operations };
+        document.getElementById('run-pipeline-btn').addEventListener('click', () => {
+            executePreview();
+        });
 
-                if (activeMode === 'rscript') {
-                    url = `/api/v1/transform/r-preview/${filename}`;
-                    payload = { r_script: document.getElementById('r-script-input').value };
-                }
-
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Pipeline preview failed');
-
-                document.getElementById('row-count').textContent = data.transformed_rows;
-                document.getElementById('col-count').textContent = data.transformed_columns;
-
-                const headerRow = document.getElementById('grid-header');
-                const bodyRows = document.getElementById('grid-body');
-                headerRow.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-2 border-r border-[#008b8b]/50">${col}</th>`).join('') + '</tr>';
-                bodyRows.innerHTML = data.data.map(row => `<tr>` + data.columns.map(col => `<td class="p-2 border-r border-[#008b8b]/30">${row[col] !== undefined ? row[col] : ''}</td>`).join('') + `</tr>`).join('');
-            } catch (err) {
-                alert('Error: ' + err.message);
-            } finally {
-                loadingOverlay.classList.add('hidden');
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedData = sessionStorage.getItem('currentDataset');
+            if (savedData) {
+                window.currentDataset = JSON.parse(savedData);
+                renderTable(window.currentDataset);
+                renderSummary();
             }
-        }
-
-        document.getElementById('run-pipeline-btn').addEventListener('click', previewPipeline);
+        });
 
         function openSaveModal(actionType) {
+            clearErrorBanner();
             pendingAction = actionType;
             const currentInputVal = document.getElementById('save-filename-input').value.trim() || 'transformed_output.csv';
             const baseName = currentInputVal.substring(0, currentInputVal.lastIndexOf('.')) || currentInputVal;
@@ -358,7 +463,10 @@
             document.getElementById('save-modal').classList.add('hidden');
         });
 
-        document.getElementById('modal-confirm-btn').addEventListener('click', async () => {
+        document.getElementById('modal-confirm-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            clearErrorBanner();
+            
             const modalNameBase = document.getElementById('modal-filename-input').value.trim() || 'transformed_output';
             const modalFormat = document.getElementById('modal-format-select').value;
             const save_filename = modalNameBase.endsWith(modalFormat) ? modalNameBase : modalNameBase + modalFormat;
@@ -366,59 +474,72 @@
             document.getElementById('save-filename-input').value = save_filename;
             document.getElementById('save-modal').classList.add('hidden');
 
-            const payload = activeMode === 'rscript' 
-                ? { save_filename, r_script: document.getElementById('r-script-input').value }
-                : { operations, save_filename };
+            const payload = {
+                save_filename: save_filename,
+                operations: activeMode === 'pipeline' ? operations : null,
+                r_script: activeMode === 'rscript' ? document.getElementById('r-script-input').value : null
+            };
 
             try {
-                const res = await fetch(`/api/v1/transform/save/${filename}`, {
+                const response = await fetch(`/api/v1/transform/save/${encodeURIComponent(filename)}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(payload)
                 });
-                if (!res.ok) throw new Error('Failed to save data');
+                
+                if (response.ok) {
+                    document.getElementById('footer-status').textContent = 'SYNCED';
+                    hasUnsavedChanges = false;
+                    localStorage.setItem('transform_persisted_' + filename, 'true');
 
-                document.getElementById('footer-status').textContent = 'SYNCED';
-                localStorage.setItem('transform_persisted_' + filename, 'true');
-
-                if (pendingAction === 'save') {
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = save_filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    localStorage.setItem('active_transformed_file_' + filename, save_filename);
-                    alert('Transformed dataset saved successfully.');
-                } else if (pendingAction === 'visualize') {
-                    localStorage.setItem('transformation_done_' + filename, 'true');
-                    localStorage.setItem('active_transformed_file_' + filename, save_filename);
-                    window.location.href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
+                    if (pendingAction === 'save') {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = save_filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                        localStorage.setItem('active_transformed_file_' + filename, save_filename);
+                    } else if (pendingAction === 'visualize') {
+                        localStorage.setItem('transformation_done_' + filename, 'true');
+                        localStorage.setItem('active_transformed_file_' + filename, save_filename);
+                        window.location.href = `/visualize.html?file=${encodeURIComponent(save_filename)}`;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error("Failed to save transformation:", errorText);
+                    showErrorBanner("Save operation failed.");
                 }
             } catch (err) {
-                alert('Error: ' + err.message);
+                console.error("Error during save operation:", err);
+                showErrorBanner("System error encountered while saving dataset.");
             }
         });
 
-        document.getElementById('save-transformed-btn').addEventListener('click', () => {
+        document.getElementById('save-transformed-btn').addEventListener('click', (e) => {
+            e.preventDefault();
             openSaveModal('save');
         });
 
-        document.getElementById('proceed-visualize-btn').addEventListener('click', () => {
+        document.getElementById('proceed-visualize-btn').addEventListener('click', (e) => {
+            e.preventDefault();
             openSaveModal('visualize');
         });
 
-        document.getElementById('footer-save-btn').addEventListener('click', () => {
+        document.getElementById('footer-save-btn').addEventListener('click', (e) => {
+            e.preventDefault();
             openSaveModal('save');
         });
 
-        document.getElementById('footer-proceed-btn').addEventListener('click', () => {
+        document.getElementById('footer-proceed-btn').addEventListener('click', (e) => {
+            e.preventDefault();
             openSaveModal('visualize');
         });
-
-        previewPipeline();
     </script>
 </body>
 </html>
