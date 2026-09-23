@@ -79,7 +79,27 @@
                     <div id="view-rscript" class="space-y-4 hidden">
                         <h2 class="text-base font-bold text-[#ffb000] tracking-widest uppercase">R SCRIPT EDITOR</h2>
                         <p class="text-xs text-[#008b8b]">Write custom R code to manipulate dataframe 'df'.</p>
-                        <textarea id="r-script-input" rows="12" class="w-full bg-[#050b14] border border-[#008b8b] rounded p-2 text-xs font-mono text-[#00f0ff] focus:outline-none" placeholder="# Example: df <- df[df$col > 10, ]"></textarea>
+                        
+                        <div class="relative flex flex-col border border-[#008b8b] rounded-lg p-4 bg-[#050b14] shadow-sm">
+                            <textarea id="rScriptEditor" class="w-full h-40 p-2 border border-[#008b8b] rounded font-mono text-xs bg-[#050b14] text-[#00f0ff] resize-y focus:outline-none focus:ring-2 focus:ring-[#00f0ff]" placeholder="Enter R script here..."></textarea>
+                            
+                            <div class="mt-2 flex justify-start">
+                                <button id="btnExecuteR" type="button" class="px-3 py-1.5 bg-[#008b8b]/30 hover:bg-[#008b8b]/60 border border-[#00f0ff] text-[#00f0ff] rounded text-xs font-medium flex items-center gap-1 shadow-sm transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Add Operation
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="operationsContainer" class="mt-4 border-t border-[#008b8b]/40 pt-3">
+                            <h4 class="text-xs font-semibold text-[#00f0ff] mb-2 uppercase">Operation Pipeline</h4>
+                            
+                            <div id="operationsList" class="flex flex-col gap-2">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -155,9 +175,15 @@
 
     <script>
         let operations = [];
+        let operationPipeline = [];
         let activeMode = 'pipeline';
         let pendingAction = null;
         let hasUnsavedChanges = false;
+
+        const rScriptEditor = document.getElementById('rScriptEditor');
+        const btnExecuteR = document.getElementById('btnExecuteR');
+        const operationsList = document.getElementById('operationsList');
+        const btnPreviewExecution = document.getElementById('run-pipeline-btn');
 
         setInterval(() => {
             document.getElementById('time-telemetry').innerText = new Date().toTimeString().split(' ')[0];
@@ -188,7 +214,119 @@
         }
 
         function getEditorContent() {
-            return document.getElementById('r-script-input').value;
+            return rScriptEditor ? rScriptEditor.value : '';
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function renderOperationsStack() {
+            if (!operationsList) return;
+            operationsList.innerHTML = '';
+
+            if (operationPipeline.length === 0) {
+                operationsList.innerHTML = `<div class="text-xs text-gray-400 italic">No queued operations.</div>`;
+                return;
+            }
+
+            operationPipeline.forEach((op, index) => {
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md text-sm shadow-sm";
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center border border-blue-300">
+                            ${index + 1}
+                        </span>
+                        <code class="font-mono text-xs text-gray-800 truncate max-w-md">${escapeHtml(op.code)}</code>
+                    </div>
+                    <button 
+                        onclick="deleteOperation(${op.id})" 
+                        type="button" 
+                        class="text-gray-400 hover:text-red-500 font-bold text-base px-2 py-0.5 rounded transition-colors"
+                        title="Delete Operation">
+                        &times;
+                    </button>
+                `;
+                operationsList.appendChild(card);
+            });
+        }
+
+        function deleteOperation(opId) {
+            operationPipeline = operationPipeline.filter(op => op.id !== opId);
+            renderOperationsStack();
+        }
+
+        if (btnExecuteR) {
+            btnExecuteR.addEventListener('click', () => {
+                const code = rScriptEditor.value.trim();
+                if (!code) {
+                    alert("Please write an R script before executing.");
+                    return;
+                }
+
+                operationPipeline.push({
+                    id: Date.now(),
+                    code: code
+                });
+
+                rScriptEditor.value = '';
+                renderOperationsStack();
+            });
+        }
+
+        async function previewExecution() {
+            clearErrorBanner();
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+
+            const payload = {
+                mode: activeMode,
+                operations: operations,
+                r_script: getEditorContent(),
+                pipeline: operationPipeline
+            };
+
+            try {
+                const url = filename ? `/api/transformation/preview/${encodeURIComponent(filename)}` : '/api/transformation/preview';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showErrorBanner(data.detail || "Error executing transformation preview.");
+                    return;
+                }
+
+                window.currentDataset = data;
+                sessionStorage.setItem('currentDataset', JSON.stringify(data));
+
+                if (data.rows !== undefined) document.getElementById('row-count').textContent = data.rows;
+                if (data.columns_count !== undefined) document.getElementById('col-count').textContent = data.columns_count;
+
+                renderPreviewTable(data.data || [], data.columns || []);
+            } catch (err) {
+                console.error('Error updating preview:', err);
+                showErrorBanner("System error encountered while connecting to execution engine.");
+            } finally {
+                if (overlay) overlay.classList.add('hidden');
+            }
+        }
+
+        if (btnPreviewExecution) {
+            btnPreviewExecution.addEventListener('click', () => {
+                previewExecution();
+            });
         }
 
         function bindTableCellEvents() {
@@ -208,13 +346,13 @@
 
         function renderPreviewTable(rows, columns) {
             const tableContainer = document.getElementById('dataframe-container');
-            
+
             let html = '<table id="transformationTable" class="w-full text-left text-sm text-[#00f0ff] border-collapse"><thead id="grid-header" class="bg-[#0a1128] text-[#ffb000] text-xs sticky top-0 border-b border-[#008b8b]"><tr>';
             columns.forEach(col => {
                 html += `<th class="p-2 border-r border-[#008b8b]/50">${col}</th>`;
             });
             html += '</tr></thead><tbody id="grid-body" class="divide-y divide-[#008b8b]/30">';
-            
+
             rows.forEach((row, rIdx) => {
                 html += '<tr>';
                 columns.forEach(col => {
@@ -224,7 +362,7 @@
                 html += '</tr>';
             });
             html += '</tbody></table>';
-            
+
             tableContainer.innerHTML = html;
             bindTableCellEvents();
         }
@@ -240,7 +378,7 @@
         function getTransformFilename() {
             const urlParams = new URLSearchParams(window.location.search);
             let file = urlParams.get('file');
-            
+
             if (!file || file === "null" || file === "undefined") {
                 file = localStorage.getItem('activeDatasetId') || localStorage.getItem('last_uploaded_file');
             }
@@ -252,7 +390,7 @@
         if (filename) {
             document.getElementById('current-filename').textContent = filename;
             const baseName = filename.replace(/^cleaned_/, "").replace(/^transformed_/, "");
-            
+
             document.getElementById('sidebar-ingestion-link').href = `/?file=${encodeURIComponent(baseName)}`;
             document.getElementById('sidebar-cleaning-link').href = `/cleaning.html?file=${encodeURIComponent(baseName)}`;
             document.getElementById('sidebar-transform-link').href = `/transform.html?file=${encodeURIComponent(filename)}`;
@@ -267,8 +405,8 @@
         if (savedOps) {
             try { operations = JSON.parse(savedOps); } catch(e) {}
         }
-        if (savedScript) {
-            document.getElementById('r-script-input').value = savedScript;
+        if (savedScript && rScriptEditor) {
+            rScriptEditor.value = savedScript;
         }
 
         const btnPipeline = document.getElementById('mode-pipeline');
@@ -303,11 +441,13 @@
             syncModeUI();
         });
 
-        document.getElementById('r-script-input').addEventListener('input', (e) => {
-            localStorage.setItem('transform_rscript_' + filename, e.target.value);
-            document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
-            hasUnsavedChanges = true;
-        });
+        if (rScriptEditor) {
+            rScriptEditor.addEventListener('input', (e) => {
+                localStorage.setItem('transform_rscript_' + filename, e.target.value);
+                document.getElementById('footer-status').textContent = 'UNSAVED CHANGES';
+                hasUnsavedChanges = true;
+            });
+        }
 
         function renderParamsForm() {
             const type = document.getElementById('op-type').value;
@@ -347,46 +487,6 @@
         document.getElementById('op-type').addEventListener('change', renderParamsForm);
         renderParamsForm();
 
-        async function executePreview() {
-            clearErrorBanner();
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) overlay.classList.remove('hidden');
-
-            // Align payload structure with backend model
-            const payload = activeMode === 'rscript' 
-                ? { r_script: getEditorContent() }
-                : { operations: operations };
-
-            try {
-                // Update endpoint path to target the correct FastAPI prefix and parameter
-                const response = await fetch(`/api/v1/transform/preview/${encodeURIComponent(filename)}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const data = await response.json();
-
-                if (!response.ok) {
-                    showErrorBanner(data.detail || "Error executing transformation preview.");
-                    return;
-                }
-                
-                window.currentDataset = data;
-                sessionStorage.setItem('currentDataset', JSON.stringify(data));
-                
-                if (data.rows !== undefined) document.getElementById('row-count').textContent = data.rows;
-                if (data.columns_count !== undefined) document.getElementById('col-count').textContent = data.columns_count;
-
-                renderPreviewTable(data.data || [], data.columns || []);
-            } catch (err) {
-                console.error('Error updating preview:', err);
-                showErrorBanner("System error encountered while connecting to execution engine.");
-            } finally {
-                if (overlay) overlay.classList.add('hidden');
-            }
-        }
-
         document.getElementById('add-op-btn').addEventListener('click', () => {
             const type = document.getElementById('op-type').value;
             let params = {};
@@ -401,7 +501,7 @@
             }
             operations.push({ type, params });
             updateOpsList();
-            executePreview();
+            previewExecution();
         });
 
         function updateOpsList() {
@@ -416,16 +516,12 @@
             list.innerHTML = operations.map((op, idx) => `
                 <div class="bg-[#0a1128] border border-[#008b8b] p-2 rounded flex justify-between items-center">
                     <span>${idx + 1}. ${op.type}</span>
-                    <button onclick="operations.splice(${idx},1); updateOpsList(); executePreview();" class="text-red-400 hover:text-red-200">×</button>
+                    <button onclick="operations.splice(${idx},1); updateOpsList(); previewExecution();" class="text-red-400 hover:text-red-200">×</button>
                 </div>
             `).join('');
         }
 
         updateOpsList();
-
-        document.getElementById('run-pipeline-btn').addEventListener('click', () => {
-            executePreview();
-        });
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedData = sessionStorage.getItem('currentDataset');
@@ -434,6 +530,7 @@
                 renderTable(window.currentDataset);
                 renderSummary();
             }
+            renderOperationsStack();
         });
 
         function openSaveModal(actionType) {
@@ -441,13 +538,12 @@
             pendingAction = actionType;
             const currentInputVal = document.getElementById('save-filename-input').value.trim() || 'transformed_output.csv';
             const baseName = currentInputVal.substring(0, currentInputVal.lastIndexOf('.')) || currentInputVal;
-            
+
             document.getElementById('modal-filename-input').value = baseName;
-            
+
             const summaryDiv = document.getElementById('modal-summary');
             if (activeMode === 'rscript') {
-                const scriptText = document.getElementById('r-script-input').value;
-                summaryDiv.innerHTML = `Mode: R Script<br>Script Length: ${scriptText.length} chars<br>Lines: ${scriptText.split('\n').length}`;
+                summaryDiv.innerHTML = `Mode: R Script<br>Queued Operations: ${operationPipeline.length}`;
             } else {
                 if (operations.length === 0) {
                     summaryDiv.innerHTML = `Mode: Pipeline<br>No operations queued.`;
@@ -466,29 +562,31 @@
         document.getElementById('modal-confirm-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             clearErrorBanner();
-            
+
             const modalNameBase = document.getElementById('modal-filename-input').value.trim() || 'transformed_output';
             const modalFormat = document.getElementById('modal-format-select').value;
             const save_filename = modalNameBase.endsWith(modalFormat) ? modalNameBase : modalNameBase + modalFormat;
-            
+
             document.getElementById('save-filename-input').value = save_filename;
             document.getElementById('save-modal').classList.add('hidden');
 
             const payload = {
                 save_filename: save_filename,
                 operations: activeMode === 'pipeline' ? operations : null,
-                r_script: activeMode === 'rscript' ? document.getElementById('r-script-input').value : null
+                r_script: activeMode === 'rscript' ? getEditorContent() : null,
+                pipeline: activeMode === 'rscript' ? operationPipeline : null
             };
 
             try {
-                const response = await fetch(`/api/v1/transform/save/${encodeURIComponent(filename)}`, {
+                const saveUrl = filename ? `/api/transformation/save/${encodeURIComponent(filename)}` : '/api/transformation/save';
+                const response = await fetch(saveUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (response.ok) {
                     document.getElementById('footer-status').textContent = 'SYNCED';
                     hasUnsavedChanges = false;

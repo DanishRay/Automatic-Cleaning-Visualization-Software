@@ -38,51 +38,17 @@ class TransformationService:
 
     @staticmethod
     def apply_transformations(
-        filename: str = None, operations: list = None, r_script: str = None
+        filename: str = None,
+        operations: list = None,
+        r_script: str = None,
+        scripts: list = None,
     ) -> pd.DataFrame:
         df = TransformationService._resolve_dataframe(filename)
 
         if df.empty:
             logger.warning("Executing transformations on an empty DataFrame.")
 
-        if r_script and r_script.strip():
-            with tempfile.TemporaryDirectory() as temp_dir:
-                in_csv = os.path.abspath(os.path.join(temp_dir, "input.csv")).replace("\\", "/")
-                out_csv = os.path.abspath(os.path.join(temp_dir, "output.csv")).replace("\\", "/")
-                df.to_csv(in_csv, index=False)
-
-                r_code = f"""
-                tryCatch({{
-                    df <- read.csv("{in_csv}", check.names = FALSE)
-                    {r_script}
-                    write.csv(df, "{out_csv}", row.names=FALSE)
-                }}, error = function(e) {{
-                    cat("R_EXECUTION_ERROR:", conditionMessage(e), file=stderr())
-                    quit(status=1)
-                }})
-                """
-                script_path = os.path.join(temp_dir, "script.R")
-                with open(script_path, "w", encoding="utf-8") as f:
-                    f.write(r_code)
-
-                result = subprocess.run(
-                    ["Rscript", script_path], capture_output=True, text=True
-                )
-                
-                if result.returncode != 0 or "R_EXECUTION_ERROR:" in result.stderr:
-                    error_msg = result.stderr.replace("R_EXECUTION_ERROR:", "").strip()
-                    if not error_msg and result.stdout:
-                        error_msg = result.stdout.strip()
-                    raise HTTPException(status_code=400, detail=f"R Script Error: {error_msg}")
-
-                if os.path.exists(out_csv):
-                    df = pd.read_csv(out_csv)
-                else:
-                    raise HTTPException(status_code=400, detail="R Script Error: R script failed to produce output dataset.")
-
-            data_service_instance.set_df(df)
-            return df
-
+        # 1. Execute UI Operations Pipeline Loop
         operations = operations or []
         for op in operations:
             if df.empty:
@@ -96,6 +62,12 @@ class TransformationService:
                 col = params.get("column")
                 condition = params.get("condition")
                 val = params.get("value")
+
+                if isinstance(val, str):
+                    val = val.strip()
+                elif isinstance(val, dict):
+                    val = val.get("value", "")
+
                 if col in df.columns:
                     if condition == "==":
                         df = df[df[col] == val]
@@ -146,6 +118,55 @@ class TransformationService:
                     except Exception as err:
                         logger.warning(f"Failed to cast column '{col}' to {target_type}: {err}")
 
+        # 2. Extract and Execute R Scripts / Pipeline
+        extracted_scripts = []
+        if scripts:
+            for item in scripts:
+                if isinstance(item, str) and item.strip():
+                    extracted_scripts.append(item.strip())
+                elif isinstance(item, dict) and item.get("code"):
+                    extracted_scripts.append(item.get("code").strip())
+
+        if r_script and isinstance(r_script, str) and r_script.strip():
+            extracted_scripts.append(r_script.strip())
+
+        combined_r_script = "\n\n".join(extracted_scripts)
+
+        if combined_r_script:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                in_csv = os.path.abspath(os.path.join(temp_dir, "input.csv")).replace("\\", "/")
+                out_csv = os.path.abspath(os.path.join(temp_dir, "output.csv")).replace("\\", "/")
+                df.to_csv(in_csv, index=False)
+
+                r_code = f"""
+                tryCatch({{
+                    df <- read.csv("{in_csv}", check.names = FALSE)
+                    {combined_r_script}
+                    write.csv(df, "{out_csv}", row.names=FALSE)
+                }}, error = function(e) {{
+                    cat("R_EXECUTION_ERROR:", conditionMessage(e), file=stderr())
+                    quit(status=1)
+                }})
+                """
+                script_path = os.path.join(temp_dir, "script.R")
+                with open(script_path, "w", encoding="utf-8") as f:
+                    f.write(r_code)
+
+                result = subprocess.run(
+                    ["Rscript", script_path], capture_output=True, text=True
+                )
+
+                if result.returncode != 0 or "R_EXECUTION_ERROR:" in result.stderr:
+                    error_msg = result.stderr.replace("R_EXECUTION_ERROR:", "").strip() if isinstance(result.stderr, str) else ""
+                    if not error_msg and result.stdout:
+                        error_msg = result.stdout.strip() if isinstance(result.stdout, str) else str(result.stdout)
+                    raise HTTPException(status_code=400, detail=f"R Script Error: {error_msg}")
+
+                if os.path.exists(out_csv):
+                    df = pd.read_csv(out_csv)
+                else:
+                    raise HTTPException(status_code=400, detail="R Script Error: R script failed to produce output dataset.")
+
         data_service_instance.set_df(df)
         return df
 
@@ -155,12 +176,13 @@ class TransformationService:
         operations: list = None,
         save_filename: str = "transformed_output.csv",
         r_script: str = None,
+        scripts: list = None,
     ) -> str:
         try:
             df = TransformationService.apply_transformations(
-                filename, operations=operations, r_script=r_script
+                filename, operations=operations, r_script=r_script, scripts=scripts
             )
-            
+
             TEMP_DIR.mkdir(parents=True, exist_ok=True)
             if not os.access(TEMP_DIR, os.W_OK):
                 raise PermissionError(f"Write permissions denied for directory: {TEMP_DIR}")
@@ -181,7 +203,6 @@ class TransformationService:
         except Exception as e:
             error_trace = traceback.format_exc()
             logger.error(f"Error during save execution:\n{error_trace}")
-            print(f"SERVICE_SAVE_EXCEPTION:\n{error_trace}")
             if isinstance(e, HTTPException):
                 raise e
             raise HTTPException(status_code=500, detail=f"Save execution failed: {str(e)}")
