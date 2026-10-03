@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import traceback
 from pathlib import Path
+from typing import Dict, Any, List
 from fastapi import HTTPException
 import pandas as pd
 from app.services.data_service import data_service_instance, DataService
@@ -33,6 +34,72 @@ class TransformationService:
 
         if df.empty:
             logger.warning("Warning: DataFrame is empty at execution time!")
+
+        return df
+
+    @staticmethod
+    def apply_operations(df: pd.DataFrame, operations: List[Dict[str, Any]]) -> pd.DataFrame:
+        """
+        Applies a stack of transformation operations to a pandas DataFrame.
+        Standard operations compute results and store them in `target_col`.
+        The 'rename' operation modifies column names in-place.
+        """
+        df = df.copy()
+
+        for op in operations:
+            op_type = op.get("type")
+            source_col = op.get("column")
+            # Fall back to source_col if target column is missing/empty
+            target_col = op.get("new_column") or op.get("targetColumnName") or op.get("outputColumnName") or source_col
+
+            if not source_col or source_col not in df.columns:
+                continue
+
+            # EXCEPTION: Rename operation modifies existing column in-place
+            if op_type in ["rename", "rename_column"]:
+                new_name = op.get("new_name") or target_col
+                if new_name and new_name != source_col:
+                    df = df.rename(columns={source_col: new_name})
+                continue
+
+            # Standard Operations: Transform & output to target_col (new or overwritten column)
+            if op_type == "uppercase":
+                df[target_col] = df[source_col].astype(str).str.upper()
+
+            elif op_type == "lowercase":
+                df[target_col] = df[source_col].astype(str).str.lower()
+
+            elif op_type == "trim":
+                df[target_col] = df[source_col].astype(str).str.strip()
+
+            elif op_type == "type_cast":
+                target_type = op.get("target_type")
+                try:
+                    if target_type == "numeric":
+                        df[target_col] = pd.to_numeric(df[source_col], errors="coerce")
+                    elif target_type == "datetime":
+                        df[target_col] = pd.to_datetime(df[source_col], errors="coerce")
+                    elif target_type == "string":
+                        df[target_col] = df[source_col].astype(str)
+                except Exception:
+                    pass
+
+            elif op_type == "math":
+                expression = op.get("expression")  # e.g. "+ 10", "* 2"
+                try:
+                    series = pd.to_numeric(df[source_col], errors="coerce")
+                    if expression:
+                        df[target_col] = pd.eval(f"series {expression}")
+                except Exception:
+                    pass
+
+            elif op_type == "date_format":
+                date_fmt = op.get("format", "%Y-%m-%d")
+                try:
+                    dates = pd.to_datetime(df[source_col], errors="coerce")
+                    df[target_col] = dates.dt.strftime(date_fmt)
+                except Exception:
+                    pass
 
         return df
 
@@ -101,20 +168,22 @@ class TransformationService:
             elif op_type == "cast_type":
                 col = params.get("column")
                 target_type = params.get("target_type")
+                # Output to new column if defined, otherwise update in-place
+                target_col = params.get("new_column") or params.get("targetColumnName") or params.get("outputColumnName") or col
                 if col in df.columns:
                     try:
                         if target_type == "int":
-                            df[col] = (
+                            df[target_col] = (
                                 pd.to_numeric(df[col], errors="coerce")
                                 .fillna(0)
                                 .astype(int)
                             )
                         elif target_type == "float":
-                            df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
+                            df[target_col] = pd.to_numeric(df[col], errors="coerce").astype(float)
                         elif target_type == "str":
-                            df[col] = df[col].astype(str)
+                            df[target_col] = df[col].astype(str)
                         elif target_type == "datetime":
-                            df[col] = pd.to_datetime(df[col], errors="coerce")
+                            df[target_col] = pd.to_datetime(df[col], errors="coerce")
                     except Exception as err:
                         logger.warning(f"Failed to cast column '{col}' to {target_type}: {err}")
 

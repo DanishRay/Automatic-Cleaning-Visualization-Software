@@ -480,6 +480,7 @@
                         <option value="str">String</option>
                         <option value="datetime">Datetime</option>
                     </select>
+                    <input type="text" id="p-new-col" placeholder="New column name" class="w-full bg-[#050b14] border border-[#008b8b] p-1.5 rounded text-[#00f0ff]">
                 `;
             }
         }
@@ -495,9 +496,36 @@
             } else if (type === 'select_columns') {
                 params = { columns: document.getElementById('p-cols').value.split(',').map(s => s.trim()) };
             } else if (type === 'rename_column') {
-                params = { old_name: document.getElementById('p-old').value, new_name: document.getElementById('p-new').value };
+                const oldName = document.getElementById('p-old').value.trim();
+                const newName = document.getElementById('p-new').value.trim();
+                if (!oldName || !newName) {
+                    showErrorBanner("Old and new column names must not be empty.");
+                    return;
+                }
+                params = { old_name: oldName, new_name: newName };
             } else if (type === 'cast_type') {
-                params = { column: document.getElementById('p-col').value, target_type: document.getElementById('p-type-target').value };
+                const srcCol = document.getElementById('p-col').value.trim();
+                const newCol = document.getElementById('p-new-col').value.trim();
+                if (!srcCol) {
+                    showErrorBanner("Source column name is required.");
+                    return;
+                }
+                if (!newCol) {
+                    showErrorBanner("New target column name is required.");
+                    return;
+                }
+                const existingCols = (window.currentDataset?.columns || []);
+                const queuedNewCols = operations.map(o => o.params?.new_column || o.params?.outputColumnName || o.params?.new_name).filter(Boolean);
+                if (existingCols.includes(newCol) || queuedNewCols.includes(newCol)) {
+                    showErrorBanner("Target column name must be unique.");
+                    return;
+                }
+                params = { 
+                    column: srcCol, 
+                    target_type: document.getElementById('p-type-target').value,
+                    new_column: newCol,
+                    outputColumnName: newCol
+                };
             }
             operations.push({ type, params });
             updateOpsList();
@@ -513,12 +541,22 @@
                 list.innerHTML = `<p class="text-[#008b8b] italic">No transformation operations queued.</p>`;
                 return;
             }
-            list.innerHTML = operations.map((op, idx) => `
-                <div class="bg-[#0a1128] border border-[#008b8b] p-2 rounded flex justify-between items-center">
-                    <span>${idx + 1}. ${op.type}</span>
-                    <button onclick="operations.splice(${idx},1); updateOpsList(); previewExecution();" class="text-red-400 hover:text-red-200">×</button>
-                </div>
-            `).join('');
+            list.innerHTML = operations.map((op, idx) => {
+                let mappingDisplay = op.type;
+                if (op.type === 'rename_column') {
+                    mappingDisplay = `rename: [${op.params.old_name || ''}] → [${op.params.new_name || ''}]`;
+                } else if (op.params && (op.params.new_column || op.params.outputColumnName)) {
+                    const target = op.params.new_column || op.params.outputColumnName;
+                    const source = op.params.column || '';
+                    mappingDisplay = `${op.type}: [${source}] → [${target}]`;
+                }
+                return `
+                    <div class="bg-[#0a1128] border border-[#008b8b] p-2 rounded flex justify-between items-center">
+                        <span>${idx + 1}. ${mappingDisplay}</span>
+                        <button onclick="operations.splice(${idx},1); updateOpsList(); previewExecution();" class="text-red-400 hover:text-red-200">×</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         updateOpsList();
